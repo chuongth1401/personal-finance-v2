@@ -1,0 +1,232 @@
+// Prisma schema cho backend NestJS - ứng dụng quản lý tài chính cá nhân.
+// SQLite không hỗ trợ enum ở tầng DB, nên các trường dạng "loại"
+// (type, kind, frequency, severity...) dùng String và được validate
+// bằng class-validator ở tầng DTO (xem backend/CLAUDE.md).
+
+generator client {
+  provider            = "prisma-client"
+  output              = "../generated/prisma"
+  moduleFormat        = "cjs"
+  importFileExtension = ""
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+/// Người dùng. Xác thực thật chưa được triển khai - passwordHash để trống
+/// sẵn chỗ cho sau này; mọi dữ liệu tài chính đều thuộc về một User.
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String?
+  name         String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  accounts              Account[]
+  categories            Category[]
+  transactions          Transaction[]
+  budgets               Budget[]
+  savingsGoals          SavingsGoal[]
+  receipts              Receipt[]
+  recurringTransactions RecurringTransaction[]
+  financialInsights     FinancialInsight[]
+}
+
+/// Tài khoản tiền: tiền mặt, ngân hàng, ví điện tử, thẻ tín dụng...
+/// type: CASH | BANK | EWALLET | CREDIT
+model Account {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  type      String
+  /// Số dư hiện tại, VND, số nguyên.
+  balance   Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  transactions          Transaction[]          @relation("TransactionSourceAccount")
+  incomingTransactions  Transaction[]          @relation("TransactionDestinationAccount")
+  recurringTransactions RecurringTransaction[]
+
+  @@index([userId])
+}
+
+/// Danh mục thu/chi, quản lý riêng theo từng user.
+/// kind: INCOME | EXPENSE
+model Category {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  kind      String
+  /// Mã màu hex, dùng để hiển thị badge/biểu đồ.
+  color     String
+  /// Tên icon (khớp với bộ icon phía frontend), optional.
+  icon      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  transactions          Transaction[]
+  budgets               Budget[]
+  recurringTransactions RecurringTransaction[]
+  financialInsights     FinancialInsight[]
+
+  @@unique([userId, name])
+  @@index([userId])
+}
+
+/// Giao dịch: thu nhập, chi tiêu hoặc chuyển khoản giữa 2 tài khoản.
+/// type: INCOME | EXPENSE | TRANSFER
+model Transaction {
+  id                     String   @id @default(cuid())
+  userId                 String
+  /// Tài khoản nguồn (luôn bắt buộc).
+  accountId              String
+  /// Tài khoản đích, chỉ dùng khi type = TRANSFER.
+  toAccountId            String?
+  /// Danh mục, optional vì TRANSFER thường không gắn danh mục.
+  categoryId             String?
+  type                   String
+  /// Số tiền VND, luôn là số nguyên dương; dấu +/- suy ra từ `type`.
+  amount                 Int
+  date                   DateTime
+  description            String
+  note                   String?
+  /// Nếu giao dịch được sinh tự động từ RecurringTransaction.
+  recurringTransactionId String?
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  user                 User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  account              Account               @relation("TransactionSourceAccount", fields: [accountId], references: [id], onDelete: Cascade)
+  toAccount            Account?              @relation("TransactionDestinationAccount", fields: [toAccountId], references: [id], onDelete: SetNull)
+  category             Category?             @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  recurringTransaction RecurringTransaction? @relation(fields: [recurringTransactionId], references: [id], onDelete: SetNull)
+  receipts             Receipt[]
+
+  @@index([userId])
+  @@index([date])
+  @@index([accountId])
+  @@index([categoryId])
+  @@index([userId, date])
+}
+
+/// Hạn mức chi tiêu theo danh mục cho một kỳ (period dạng "yyyy-MM").
+model Budget {
+  id         String   @id @default(cuid())
+  userId     String
+  categoryId String
+  /// Hạn mức VND cho kỳ này.
+  limit      Int
+  /// Kỳ ngân sách, định dạng yyyy-MM.
+  period     String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, categoryId, period])
+  @@index([userId, period])
+}
+
+/// Mục tiêu tiết kiệm.
+model SavingsGoal {
+  id            String    @id @default(cuid())
+  userId        String
+  name          String
+  targetAmount  Int
+  currentAmount Int       @default(0)
+  deadline      DateTime?
+  color         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+/// Hoá đơn/biên lai. transactionId optional vì người dùng có thể upload
+/// ảnh hoá đơn trước, đối soát với giao dịch cụ thể sau (luồng OCR).
+model Receipt {
+  id            String    @id @default(cuid())
+  userId        String
+  transactionId String?
+  fileUrl       String
+  fileName      String?
+  mimeType      String?
+  fileSize      Int?
+  merchantName  String?
+  /// Số tiền đọc được từ hoá đơn (có thể lệch với transaction.amount trước khi đối soát).
+  amount        Int?
+  issuedAt      DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transaction Transaction? @relation(fields: [transactionId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([transactionId])
+}
+
+/// Mẫu giao dịch lặp lại định kỳ (lương, tiền thuê nhà, thuê bao...).
+/// type: INCOME | EXPENSE | TRANSFER
+/// frequency: DAILY | WEEKLY | MONTHLY | YEARLY
+model RecurringTransaction {
+  id          String    @id @default(cuid())
+  userId      String
+  accountId   String
+  categoryId  String?
+  type        String
+  amount      Int
+  description String
+  frequency   String
+  /// Lặp lại mỗi N đơn vị frequency (mặc định 1 = mỗi kỳ).
+  interval    Int       @default(1)
+  startDate   DateTime
+  endDate     DateTime?
+  /// Ngày kế tiếp cần sinh giao dịch, dùng cho job nền.
+  nextRunDate DateTime
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  account  Account   @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  category Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  generatedTransactions Transaction[]
+
+  @@index([userId])
+  @@index([nextRunDate])
+}
+
+/// Gợi ý/cảnh báo tài chính (vượt ngân sách, xu hướng chi tiêu...).
+/// type: OVERSPENDING | SAVING_OPPORTUNITY | BUDGET_ALERT | TREND | GOAL_PROGRESS
+/// severity: INFO | WARNING | CRITICAL
+model FinancialInsight {
+  id          String    @id @default(cuid())
+  userId      String
+  categoryId  String?
+  type        String
+  severity    String
+  title       String
+  message     String
+  periodStart DateTime?
+  periodEnd   DateTime?
+  isRead      Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([userId, isRead])
+}
