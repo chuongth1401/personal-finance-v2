@@ -1,12 +1,12 @@
 import { Component, inject, output } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { NavigationEnd, Router } from '@angular/router';
-import { LucideBell, LucideCircleUser, LucideMenu, LucideSearch } from '@lucide/angular';
+import { NavigationEnd, Router, RouterLink } from '@angular/router';
+import { LucideBell, LucideCircleUser, LucideMenu, LucidePlus, LucideSearch } from '@lucide/angular';
 import { filter, map, startWith } from 'rxjs';
 
 @Component({
   selector: 'app-header',
-  imports: [LucideMenu, LucideSearch, LucideBell, LucideCircleUser],
+  imports: [RouterLink, LucideMenu, LucideSearch, LucideBell, LucideCircleUser, LucidePlus],
   template: `
     <header class="sticky top-0 z-20 border-b border-slate-200 bg-white/80 backdrop-blur">
       <div class="flex h-16 items-center gap-3 px-4 sm:px-6 lg:px-8">
@@ -39,6 +39,15 @@ import { filter, map, startWith } from 'rxjs';
           >
             <svg lucideBell [size]="20" />
           </button>
+
+          <a
+            routerLink="/transactions"
+            [queryParams]="{ new: 1 }"
+            class="flex items-center gap-1.5 rounded-xl bg-slate-900 px-3 py-2 text-sm font-medium text-white transition hover:bg-slate-800 sm:px-3.5"
+          >
+            <svg lucidePlus [size]="16" />
+            <span class="hidden sm:inline">Thêm giao dịch</span>
+          </a>
 
           <div class="flex items-center gap-2 rounded-xl border border-slate-200 py-1.5 pl-1.5 pr-3">
             <span class="flex size-7 items-center justify-center rounded-lg bg-slate-100 text-slate-600">
