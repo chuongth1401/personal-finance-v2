@@ -1,0 +1,37 @@
+<div class="grid grid-cols-1 gap-4 xl:grid-cols-5">
+  <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm xl:col-span-3">
+    <div class="mb-4">
+      <h2 class="text-sm font-semibold text-slate-900">Chi tiêu theo danh mục</h2>
+      <p class="text-xs text-slate-500">Tháng hiện tại</p>
+    </div>
+    @if (data.categoryBreakdown().length > 0) {
+      <div class="h-80">
+        <canvas baseChart type="bar" [data]="categoryBarData()" [options]="categoryBarOptions"></canvas>
+      </div>
+    } @else {
+      <p class="py-10 text-center text-sm text-slate-400">Chưa có dữ liệu chi tiêu để phân tích.</p>
+    }
+  </div>
+
+  <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm xl:col-span-2">
+    <h2 class="mb-4 text-sm font-semibold text-slate-900">Tỷ trọng danh mục</h2>
+    <ul class="flex flex-col gap-3">
+      @for (item of data.categoryBreakdown(); track item.category.id) {
+        <li>
+          <div class="mb-1 flex items-center justify-between text-sm">
+            <span class="flex items-center gap-2 font-medium text-slate-700">
+              <span class="size-2.5 rounded-full" [style.background-color]="item.category.color"></span>
+              {{ item.category.name }}
+            </span>
+            <span class="text-slate-500">{{ formatVnd(item.amount) }}</span>
+          </div>
+          <div class="h-1.5 overflow-hidden rounded-full bg-slate-100">
+            <div class="h-full rounded-full" [style.background-color]="item.category.color" [style.width.%]="shareOf(item.amount)"></div>
+          </div>
+        </li>
+      } @empty {
+        <p class="py-6 text-center text-sm text-slate-400">Không có dữ liệu.</p>
+      }
+    </ul>
+  </div>
+</div>

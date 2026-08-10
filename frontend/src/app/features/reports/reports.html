@@ -1,0 +1,44 @@
+<div class="flex flex-col gap-4">
+  <div class="flex items-center justify-between">
+    <div>
+      <h2 class="text-sm font-semibold text-slate-900">Báo cáo tổng hợp</h2>
+      <p class="text-xs text-slate-500">Thu nhập, chi tiêu và số dư ròng theo tháng</p>
+    </div>
+    <button
+      type="button"
+      disabled
+      title="Chưa khả dụng ở giai đoạn dữ liệu mẫu"
+      class="inline-flex cursor-not-allowed items-center gap-2 rounded-xl border border-slate-200 px-3.5 py-2 text-sm font-medium text-slate-400"
+    >
+      <svg lucideDownload [size]="16" />
+      Xuất báo cáo
+    </button>
+  </div>
+
+  <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <div class="overflow-x-auto">
+      <table class="w-full min-w-[560px] text-left text-sm">
+        <thead class="border-b border-slate-100 bg-slate-50/60 text-xs uppercase tracking-wide text-slate-500">
+          <tr>
+            <th class="px-5 py-3 font-medium">Tháng</th>
+            <th class="px-5 py-3 text-right font-medium">Thu nhập</th>
+            <th class="px-5 py-3 text-right font-medium">Chi tiêu</th>
+            <th class="px-5 py-3 text-right font-medium">Chênh lệch</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          @for (row of monthlySummary(); track row.key) {
+            <tr class="transition hover:bg-slate-50">
+              <td class="px-5 py-3.5 font-medium text-slate-800">{{ row.label }}</td>
+              <td class="px-5 py-3.5 text-right text-emerald-600">{{ formatVnd(row.income) }}</td>
+              <td class="px-5 py-3.5 text-right text-rose-600">{{ formatVnd(row.expense) }}</td>
+              <td class="px-5 py-3.5 text-right font-semibold" [class]="row.net >= 0 ? 'text-slate-800' : 'text-rose-600'">
+                {{ formatVnd(row.net) }}
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

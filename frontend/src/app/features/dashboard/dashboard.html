@@ -1,0 +1,136 @@
+<div class="flex flex-col gap-6">
+  <!-- KPI cards -->
+  <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <app-kpi-card label="Số dư khả dụng" [value]="balanceLabel()" accent="info">
+      <svg icon lucideDollarSign [size]="20" />
+    </app-kpi-card>
+
+    <app-kpi-card
+      label="Thu nhập tháng này"
+      [value]="incomeLabel()"
+      trendLabel="So với tháng trước"
+      trendDirection="up"
+      accent="success"
+    >
+      <svg icon lucideTrendingUp [size]="20" />
+    </app-kpi-card>
+
+    <app-kpi-card
+      label="Chi tiêu tháng này"
+      [value]="expenseLabel()"
+      trendLabel="So với tháng trước"
+      trendDirection="down"
+      accent="danger"
+    >
+      <svg icon lucideTrendingDown [size]="20" />
+    </app-kpi-card>
+
+    <app-kpi-card label="Tỷ lệ tiết kiệm" [value]="savingsRateLabel()" accent="default">
+      <svg icon lucidePiggyBank [size]="20" />
+    </app-kpi-card>
+  </div>
+
+  <!-- Charts -->
+  <div class="grid grid-cols-1 gap-4 xl:grid-cols-3">
+    <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm xl:col-span-2">
+      <div class="mb-4 flex items-center justify-between">
+        <div>
+          <h2 class="text-sm font-semibold text-slate-900">Dòng tiền 6 tháng gần nhất</h2>
+          <p class="text-xs text-slate-500">Thu nhập và chi tiêu theo tháng</p>
+        </div>
+      </div>
+      <div class="h-72">
+        <canvas baseChart type="line" [data]="cashFlowChartData()" [options]="cashFlowChartOptions"></canvas>
+      </div>
+    </div>
+
+    <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <div class="mb-4 flex items-center gap-2">
+        <svg lucideChartPie [size]="16" class="text-slate-400" />
+        <div>
+          <h2 class="text-sm font-semibold text-slate-900">Phân bổ chi tiêu</h2>
+          <p class="text-xs text-slate-500">Theo danh mục, tháng này</p>
+        </div>
+      </div>
+      @if (data.categoryBreakdown().length > 0) {
+        <div class="h-72">
+          <canvas baseChart type="doughnut" [data]="categoryChartData()" [options]="categoryChartOptions"></canvas>
+        </div>
+      } @else {
+        <p class="py-10 text-center text-sm text-slate-400">Chưa có chi tiêu trong tháng này.</p>
+      }
+    </div>
+  </div>
+
+  <!-- Recent transactions + budget alerts -->
+  <div class="grid grid-cols-1 gap-4 xl:grid-cols-3">
+    <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm xl:col-span-2">
+      <h2 class="mb-4 text-sm font-semibold text-slate-900">Giao dịch gần đây</h2>
+      <ul class="divide-y divide-slate-100">
+        @for (t of data.recentTransactions(); track t.id) {
+          <li class="flex items-center justify-between gap-3 py-3">
+            <div class="flex min-w-0 items-center gap-3">
+              <span
+                class="flex size-9 shrink-0 items-center justify-center rounded-xl"
+                [class]="t.type === 'income' ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'"
+              >
+                @if (t.type === 'income') {
+                  <svg lucideArrowUpRight [size]="16" />
+                } @else {
+                  <svg lucideArrowDownRight [size]="16" />
+                }
+              </span>
+              <div class="min-w-0">
+                <p class="truncate text-sm font-medium text-slate-800">{{ t.description }}</p>
+                <div class="mt-1 flex items-center gap-2">
+                  <app-badge [label]="data.categoryById(t.categoryId).name" [color]="data.categoryById(t.categoryId).color" />
+                  <span class="text-xs text-slate-400">{{ t.date }}</span>
+                </div>
+              </div>
+            </div>
+            <span
+              class="shrink-0 text-sm font-semibold"
+              [class]="t.type === 'income' ? 'text-emerald-600' : 'text-rose-600'"
+            >
+              {{ t.type === 'income' ? '+' : '-' }}{{ formatVnd(t.amount) }}
+            </span>
+          </li>
+        }
+      </ul>
+    </div>
+
+    <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <h2 class="mb-4 flex items-center gap-2 text-sm font-semibold text-slate-900">
+        <svg lucideTriangleAlert [size]="16" class="text-amber-500" />
+        Cảnh báo ngân sách
+      </h2>
+
+      @if (data.budgetAlerts().length > 0) {
+        <ul class="flex flex-col gap-4">
+          @for (alert of data.budgetAlerts(); track alert.budget.id) {
+            <li>
+              <div class="mb-1.5 flex items-center justify-between text-sm">
+                <span class="font-medium text-slate-700">{{ alert.category.name }}</span>
+                <span class="text-xs font-semibold" [class]="alert.ratio >= 1 ? 'text-rose-600' : 'text-amber-600'">
+                  {{ (alert.ratio * 100) | number: '1.0-0' }}%
+                </span>
+              </div>
+              <div class="h-2 overflow-hidden rounded-full bg-slate-100">
+                <div
+                  class="h-full rounded-full"
+                  [class]="alert.ratio >= 1 ? 'bg-rose-500' : 'bg-amber-500'"
+                  [style.width.%]="alert.ratio * 100 > 100 ? 100 : alert.ratio * 100"
+                ></div>
+              </div>
+              <p class="mt-1 text-xs text-slate-500">
+                {{ formatVnd(alert.spent) }} / {{ formatVnd(alert.budget.limit) }}
+              </p>
+            </li>
+          }
+        </ul>
+      } @else {
+        <p class="py-6 text-center text-sm text-slate-400">Chưa có ngân sách nào vượt ngưỡng cảnh báo.</p>
+      }
+    </div>
+  </div>
+</div>

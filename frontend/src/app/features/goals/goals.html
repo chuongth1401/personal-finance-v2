@@ -1,0 +1,37 @@
+<div class="flex flex-col gap-4">
+  <div>
+    <h2 class="text-sm font-semibold text-slate-900">Mục tiêu tiết kiệm</h2>
+    <p class="text-xs text-slate-500">Tiến độ hướng tới từng mục tiêu tài chính</p>
+  </div>
+
+  <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+    @for (goal of data.goals(); track goal.id) {
+      <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+        <div class="mb-4 flex items-center gap-3">
+          <span class="flex size-10 items-center justify-center rounded-xl" [style.background-color]="goal.color + '1f'" [style.color]="goal.color">
+            <svg lucideTarget [size]="18" />
+          </span>
+          <div class="min-w-0">
+            <p class="truncate text-sm font-semibold text-slate-800">{{ goal.name }}</p>
+            <p class="text-xs text-slate-500">Còn {{ daysLeft(goal.deadline) }} ngày</p>
+          </div>
+        </div>
+
+        <div class="h-2 overflow-hidden rounded-full bg-slate-100">
+          <div
+            class="h-full rounded-full"
+            [style.background-color]="goal.color"
+            [style.width.%]="progressRatio(goal.currentAmount, goal.targetAmount) * 100"
+          ></div>
+        </div>
+
+        <div class="mt-3 flex items-center justify-between text-sm">
+          <span class="text-slate-500">{{ formatVnd(goal.currentAmount) }} / {{ formatVnd(goal.targetAmount) }}</span>
+          <span class="font-semibold text-slate-800">
+            {{ (progressRatio(goal.currentAmount, goal.targetAmount) * 100).toFixed(0) }}%
+          </span>
+        </div>
+      </div>
+    }
+  </div>
+</div>
