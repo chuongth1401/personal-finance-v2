@@ -17,6 +17,7 @@ import { forkJoin } from 'rxjs';
 import { AccountsApiService } from '../../core/api/accounts-api.service';
 import { CategoriesApiService } from '../../core/api/categories-api.service';
 import { extractErrorMessage } from '../../core/api/http-error.util';
+import { AmountInputDirective } from '../../core/directives/amount-input.directive';
 import { Account } from '../../core/api/models/account.model';
 import { Category } from '../../core/api/models/category.model';
 import { ConfirmReceiptRequest, Receipt } from '../../core/api/models/receipt.model';
@@ -43,6 +44,7 @@ function todayDateString(): string {
   selector: 'app-receipts',
   imports: [
     ReactiveFormsModule,
+    AmountInputDirective,
     RouterLink,
     LucideUpload,
     LucideFileImage,

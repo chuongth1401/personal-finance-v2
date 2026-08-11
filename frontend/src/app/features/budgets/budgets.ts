@@ -11,6 +11,7 @@ import {
 } from '@lucide/angular';
 
 import { BudgetsApiService } from '../../core/api/budgets-api.service';
+import { AmountInputDirective } from '../../core/directives/amount-input.directive';
 import { CategoriesApiService } from '../../core/api/categories-api.service';
 import { extractErrorMessage } from '../../core/api/http-error.util';
 import {
@@ -58,6 +59,7 @@ function integerAmountValidator(
   selector: 'app-budgets',
   imports: [
     ReactiveFormsModule,
+    AmountInputDirective,
     LucideTriangleAlert,
     LucideCalendar,
     LucidePlus,

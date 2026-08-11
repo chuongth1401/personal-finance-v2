@@ -19,6 +19,7 @@ import {
 import { forkJoin } from 'rxjs';
 
 import { AccountsApiService } from '../../core/api/accounts-api.service';
+import { AmountInputDirective } from '../../core/directives/amount-input.directive';
 import { CategoriesApiService } from '../../core/api/categories-api.service';
 import { extractErrorMessage } from '../../core/api/http-error.util';
 import { Account } from '../../core/api/models/account.model';
@@ -71,6 +72,7 @@ function todayDateString(): string {
   selector: 'app-transactions',
   imports: [
     ReactiveFormsModule,
+    AmountInputDirective,
     LucidePlus,
     LucideX,
     LucideTrash2,

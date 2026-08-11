@@ -11,6 +11,7 @@ import {
 import { LucidePencil, LucidePlus, LucideTrash2, LucideX } from '@lucide/angular';
 
 import { extractErrorMessage } from '../../core/api/http-error.util';
+import { AmountInputDirective } from '../../core/directives/amount-input.directive';
 import {
   CreateSavingsGoalRequest,
   GoalStatus,
@@ -60,7 +61,15 @@ function integerAmountValidator(control: AbstractControl): ValidationErrors | nu
 
 @Component({
   selector: 'app-goals',
-  imports: [ReactiveFormsModule, CategoryIcon, LucidePlus, LucidePencil, LucideTrash2, LucideX],
+  imports: [
+    ReactiveFormsModule,
+    AmountInputDirective,
+    CategoryIcon,
+    LucidePlus,
+    LucidePencil,
+    LucideTrash2,
+    LucideX,
+  ],
   templateUrl: './goals.html',
 })
 export class Goals implements OnInit {

@@ -11,6 +11,7 @@ import {
 import { LucidePencil, LucidePlus, LucideTrash2, LucideX } from '@lucide/angular';
 
 import { AccountsApiService } from '../../core/api/accounts-api.service';
+import { AmountInputDirective } from '../../core/directives/amount-input.directive';
 import { CategoriesApiService } from '../../core/api/categories-api.service';
 import { extractErrorMessage } from '../../core/api/http-error.util';
 import { Account, AccountType, CreateAccountRequest } from '../../core/api/models/account.model';
@@ -58,7 +59,15 @@ function integerValidator(control: AbstractControl): ValidationErrors | null {
 
 @Component({
   selector: 'app-settings',
-  imports: [ReactiveFormsModule, CategoryIcon, LucidePlus, LucidePencil, LucideTrash2, LucideX],
+  imports: [
+    ReactiveFormsModule,
+    AmountInputDirective,
+    CategoryIcon,
+    LucidePlus,
+    LucidePencil,
+    LucideTrash2,
+    LucideX,
+  ],
   templateUrl: './settings.html',
 })
 export class Settings implements OnInit {
