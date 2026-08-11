@@ -1,44 +1,248 @@
-<div class="flex flex-col gap-4">
-  <div class="flex items-center justify-between">
+<div class="flex flex-col gap-6">
+  <!-- Chuyển chế độ + chọn kỳ báo cáo -->
+  <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
     <div>
       <h2 class="text-sm font-semibold text-slate-900">Báo cáo tổng hợp</h2>
-      <p class="text-xs text-slate-500">Thu nhập, chi tiêu và số dư ròng theo tháng</p>
+      <p class="text-xs text-slate-500">Thu nhập, chi tiêu và phân bổ chi tiêu theo kỳ</p>
     </div>
-    <button
-      type="button"
-      disabled
-      title="Chưa khả dụng ở giai đoạn dữ liệu mẫu"
-      class="inline-flex cursor-not-allowed items-center gap-2 rounded-xl border border-slate-200 px-3.5 py-2 text-sm font-medium text-slate-400"
-    >
-      <svg lucideDownload [size]="16" />
-      Xuất báo cáo
-    </button>
+
+    <div class="flex flex-wrap items-center gap-2">
+      <div
+        class="flex items-center gap-1 rounded-xl border border-slate-200 bg-white p-1 shadow-sm"
+      >
+        <button
+          type="button"
+          class="rounded-lg px-3 py-1.5 text-xs font-medium transition"
+          [class]="
+            mode() === 'monthly' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'
+          "
+          (click)="setMode('monthly')"
+        >
+          Theo tháng
+        </button>
+        <button
+          type="button"
+          class="rounded-lg px-3 py-1.5 text-xs font-medium transition"
+          [class]="
+            mode() === 'yearly' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'
+          "
+          (click)="setMode('yearly')"
+        >
+          Theo năm
+        </button>
+      </div>
+
+      @if (mode() === 'monthly') {
+        <label
+          class="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-sm"
+        >
+          <svg lucideCalendar [size]="16" class="text-slate-400" />
+          <span class="sr-only" id="reports-month-label">Chọn tháng</span>
+          <input
+            type="month"
+            aria-labelledby="reports-month-label"
+            class="text-sm text-slate-700 outline-none"
+            [value]="selectedMonth()"
+            (change)="onMonthChange($event)"
+          />
+        </label>
+      } @else {
+        <label
+          class="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-sm"
+        >
+          <svg lucideCalendar [size]="16" class="text-slate-400" />
+          <span class="sr-only" id="reports-year-label">Chọn năm</span>
+          <select
+            aria-labelledby="reports-year-label"
+            class="text-sm text-slate-700 outline-none"
+            [value]="selectedYear()"
+            (change)="onYearChange($event)"
+          >
+            @for (y of yearOptions; track y) {
+              <option [value]="y">{{ y }}</option>
+            }
+          </select>
+        </label>
+      }
+
+      @if (mode() === 'monthly') {
+        <a
+          [href]="csvExportUrl()"
+          class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-100"
+        >
+          <svg lucideDownload [size]="16" />
+          Tải CSV
+        </a>
+      } @else {
+        <button
+          type="button"
+          disabled
+          title="Xuất CSV hiện chỉ hỗ trợ theo tháng"
+          class="inline-flex cursor-not-allowed items-center gap-2 rounded-xl border border-slate-200 px-3.5 py-2 text-sm font-medium text-slate-400"
+        >
+          <svg lucideDownload [size]="16" />
+          Tải CSV
+        </button>
+      }
+    </div>
   </div>
 
-  <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-    <div class="overflow-x-auto">
-      <table class="w-full min-w-[560px] text-left text-sm">
-        <thead class="border-b border-slate-100 bg-slate-50/60 text-xs uppercase tracking-wide text-slate-500">
-          <tr>
-            <th class="px-5 py-3 font-medium">Tháng</th>
-            <th class="px-5 py-3 text-right font-medium">Thu nhập</th>
-            <th class="px-5 py-3 text-right font-medium">Chi tiêu</th>
-            <th class="px-5 py-3 text-right font-medium">Chênh lệch</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-slate-100">
-          @for (row of monthlySummary(); track row.key) {
-            <tr class="transition hover:bg-slate-50">
-              <td class="px-5 py-3.5 font-medium text-slate-800">{{ row.label }}</td>
-              <td class="px-5 py-3.5 text-right text-emerald-600">{{ formatVnd(row.income) }}</td>
-              <td class="px-5 py-3.5 text-right text-rose-600">{{ formatVnd(row.expense) }}</td>
-              <td class="px-5 py-3.5 text-right font-semibold" [class]="row.net >= 0 ? 'text-slate-800' : 'text-rose-600'">
-                {{ formatVnd(row.net) }}
-              </td>
-            </tr>
-          }
-        </tbody>
-      </table>
+  @if (loading()) {
+    <!-- Skeleton -->
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      @for (i of [1, 2, 3, 4]; track i) {
+        <div class="animate-pulse rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div class="h-3 w-24 rounded bg-slate-200"></div>
+          <div class="mt-3 h-7 w-32 rounded bg-slate-200"></div>
+          <div class="mt-3 h-3 w-20 rounded bg-slate-100"></div>
+        </div>
+      }
     </div>
-  </div>
+    <div class="grid grid-cols-1 gap-4 xl:grid-cols-3">
+      <div
+        class="h-80 animate-pulse rounded-2xl border border-slate-200 bg-white shadow-sm xl:col-span-2"
+      ></div>
+      <div class="h-80 animate-pulse rounded-2xl border border-slate-200 bg-white shadow-sm"></div>
+    </div>
+  } @else if (error()) {
+    <div
+      class="flex flex-col items-center gap-3 rounded-2xl border border-rose-200 bg-rose-50 p-8 text-center"
+    >
+      <p class="text-sm text-rose-600">{{ error() }}</p>
+      <button
+        type="button"
+        class="rounded-xl border border-rose-200 bg-white px-3.5 py-2 text-sm font-medium text-rose-600 transition hover:bg-rose-100"
+        (click)="loadReport()"
+      >
+        Thử lại
+      </button>
+    </div>
+  } @else if (isEmpty()) {
+    <div
+      class="flex flex-col items-center gap-2 rounded-2xl border border-slate-200 bg-white p-10 text-center"
+    >
+      <p class="text-sm text-slate-400">Chưa có dữ liệu giao dịch cho kỳ này.</p>
+    </div>
+  } @else if (report(); as data) {
+    <!-- KPI cards -->
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <app-kpi-card
+        label="Tổng thu nhập"
+        [value]="formatVnd(data.totalIncome)"
+        [trendLabel]="trendLabel(data.comparisonToPreviousPeriod.incomeChangePercent)"
+        [trendDirection]="trendDirection(data.comparisonToPreviousPeriod.incomeChangePercent, true)"
+        accent="success"
+      >
+        <svg icon lucideArrowUpRight [size]="20" />
+      </app-kpi-card>
+
+      <app-kpi-card
+        label="Tổng chi tiêu"
+        [value]="formatVnd(data.totalExpense)"
+        [trendLabel]="trendLabel(data.comparisonToPreviousPeriod.expenseChangePercent)"
+        [trendDirection]="
+          trendDirection(data.comparisonToPreviousPeriod.expenseChangePercent, false)
+        "
+        accent="danger"
+      >
+        <svg icon lucideArrowDownRight [size]="20" />
+      </app-kpi-card>
+
+      <app-kpi-card label="Tiết kiệm ròng" [value]="formatVnd(data.netSavings)" accent="default">
+        <svg icon lucidePiggyBank [size]="20" />
+      </app-kpi-card>
+
+      <app-kpi-card label="Số giao dịch" [value]="data.transactions.length + ''" accent="info">
+        <svg icon lucideWallet [size]="20" />
+      </app-kpi-card>
+    </div>
+
+    <!-- Charts -->
+    <div class="grid grid-cols-1 gap-4 xl:grid-cols-3">
+      <div class="min-w-0 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm xl:col-span-2">
+        <div class="mb-4">
+          <h3 class="text-sm font-semibold text-slate-900">
+            Dòng tiền {{ mode() === 'monthly' ? 'theo ngày' : 'theo tháng' }}
+          </h3>
+          <p class="text-xs text-slate-500">Thu nhập và chi tiêu</p>
+        </div>
+        <div class="h-64 w-full sm:h-72">
+          <canvas
+            baseChart
+            type="line"
+            [data]="cashFlowChartData()"
+            [options]="cashFlowChartOptions"
+          ></canvas>
+        </div>
+      </div>
+
+      <div class="min-w-0 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div class="mb-4 flex items-center gap-2">
+          <svg lucideChartPie [size]="16" class="text-slate-400" />
+          <div>
+            <h3 class="text-sm font-semibold text-slate-900">Phân bổ chi tiêu</h3>
+            <p class="text-xs text-slate-500">Theo danh mục</p>
+          </div>
+        </div>
+        @if (data.categoryBreakdown.length > 0) {
+          <div class="h-64 w-full sm:h-72">
+            <canvas
+              baseChart
+              type="doughnut"
+              [data]="categoryChartData()"
+              [options]="categoryChartOptions"
+            ></canvas>
+          </div>
+        } @else {
+          <p class="py-10 text-center text-sm text-slate-400">Chưa có chi tiêu trong kỳ này.</p>
+        }
+      </div>
+    </div>
+
+    <!-- Top danh mục -->
+    <div class="min-w-0 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <h3 class="mb-4 text-sm font-semibold text-slate-900">Top 5 danh mục chi nhiều nhất</h3>
+      @if (data.topCategories.length > 0) {
+        <ul class="flex flex-col gap-3">
+          @for (cat of data.topCategories; track cat.categoryId; let idx = $index) {
+            <li class="flex items-center gap-3">
+              <span
+                class="flex size-6 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-500"
+              >
+                {{ idx + 1 }}
+              </span>
+              <div class="min-w-0 flex-1">
+                <div class="mb-1 flex items-center justify-between gap-2 text-sm">
+                  <span
+                    class="flex min-w-0 items-center gap-1.5 truncate font-medium text-slate-700"
+                  >
+                    <span
+                      class="size-2 shrink-0 rounded-full"
+                      [style.background-color]="cat.color"
+                    ></span>
+                    <span class="truncate">{{ cat.name }}</span>
+                  </span>
+                  <span class="shrink-0 font-semibold text-slate-800">{{
+                    formatVnd(cat.amount)
+                  }}</span>
+                </div>
+                <div class="h-1.5 overflow-hidden rounded-full bg-slate-100">
+                  <div
+                    class="h-full rounded-full"
+                    [style.background-color]="cat.color"
+                    [style.width.%]="topCategoryBarWidth(cat.amount)"
+                  ></div>
+                </div>
+              </div>
+              <span class="w-12 shrink-0 text-right text-xs text-slate-400">
+                {{ categoryPercentOfExpense(cat.amount).toFixed(0) }}%
+              </span>
+            </li>
+          }
+        </ul>
+      } @else {
+        <p class="py-6 text-center text-sm text-slate-400">Chưa có chi tiêu trong kỳ này.</p>
+      }
+    </div>
+  }
 </div>

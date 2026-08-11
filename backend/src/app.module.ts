@@ -6,6 +6,7 @@ import { BudgetsModule } from './budgets/budgets.module';
 import { CategoriesModule } from './categories/categories.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { ReportsModule } from './reports/reports.module';
 import { SavingsGoalsModule } from './savings-goals/savings-goals.module';
 import { TransactionsModule } from './transactions/transactions.module';
 
@@ -18,6 +19,7 @@ import { TransactionsModule } from './transactions/transactions.module';
     DashboardModule,
     BudgetsModule,
     SavingsGoalsModule,
+    ReportsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
