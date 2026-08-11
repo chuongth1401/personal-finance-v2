@@ -1,35 +1,252 @@
 <div class="flex flex-col gap-4">
-  <div>
-    <h2 class="text-sm font-semibold text-slate-900">Ngân sách tháng này</h2>
-    <p class="text-xs text-slate-500">Theo dõi chi tiêu theo từng danh mục so với hạn mức đã đặt</p>
+  <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <h2 class="text-sm font-semibold text-slate-900">Ngân sách theo tháng</h2>
+      <p class="text-xs text-slate-500">
+        Theo dõi chi tiêu theo từng danh mục so với hạn mức đã đặt
+      </p>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <label
+        class="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-sm"
+      >
+        <svg lucideCalendar [size]="16" class="text-slate-400" />
+        <span class="sr-only" id="budgets-month-label">Chọn tháng</span>
+        <input
+          type="month"
+          aria-labelledby="budgets-month-label"
+          class="text-sm text-slate-700 outline-none"
+          [value]="selectedMonth()"
+          (change)="onMonthChange($event)"
+        />
+      </label>
+
+      <button
+        type="button"
+        class="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-3.5 py-2 text-sm font-medium text-white transition hover:bg-slate-800"
+        (click)="openCreateForm()"
+      >
+        <svg lucidePlus [size]="16" />
+        Thêm ngân sách
+      </button>
+    </div>
   </div>
 
-  <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-    @for (status of data.budgetStatuses(); track status.budget.id) {
-      <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
-        <div class="mb-3 flex items-center justify-between">
-          <div class="flex items-center gap-2">
-            <span class="size-2.5 rounded-full" [style.background-color]="status.category.color"></span>
-            <span class="text-sm font-medium text-slate-800">{{ status.category.name }}</span>
+  @if (categoriesError()) {
+    <div class="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-700">
+      Không tải được danh sách danh mục: {{ categoriesError() }}
+    </div>
+  }
+
+  @if (loading()) {
+    <!-- Skeleton -->
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      @for (i of [1, 2, 3, 4, 5, 6]; track i) {
+        <div class="animate-pulse rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div class="h-3 w-24 rounded bg-slate-200"></div>
+          <div class="mt-4 h-2 w-full rounded-full bg-slate-100"></div>
+          <div class="mt-3 h-3 w-32 rounded bg-slate-100"></div>
+        </div>
+      }
+    </div>
+  } @else if (error()) {
+    <div
+      class="flex flex-col items-center gap-3 rounded-2xl border border-rose-200 bg-rose-50 p-8 text-center"
+    >
+      <p class="text-sm text-rose-600">{{ error() }}</p>
+      <button
+        type="button"
+        class="rounded-xl border border-rose-200 bg-white px-3.5 py-2 text-sm font-medium text-rose-600 transition hover:bg-rose-100"
+        (click)="loadBudgets()"
+      >
+        Thử lại
+      </button>
+    </div>
+  } @else if (budgets().length === 0) {
+    <div
+      class="flex flex-col items-center gap-3 rounded-2xl border border-slate-200 bg-white p-10 text-center"
+    >
+      <p class="text-sm text-slate-400">Chưa có ngân sách nào cho tháng {{ selectedMonth() }}.</p>
+      <button
+        type="button"
+        class="rounded-xl border border-slate-200 px-3.5 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-100"
+        (click)="openCreateForm()"
+      >
+        Thêm ngân sách đầu tiên
+      </button>
+    </div>
+  } @else {
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      @for (budget of budgets(); track budget.id) {
+        <div
+          class="rounded-2xl border bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+          [class]="
+            budget.status === 'EXCEEDED'
+              ? 'border-rose-300'
+              : budget.status === 'WARNING'
+                ? 'border-amber-300'
+                : 'border-slate-200'
+          "
+        >
+          <div class="mb-3 flex items-start justify-between gap-2">
+            <div class="flex min-w-0 items-center gap-2">
+              <span
+                class="size-2.5 shrink-0 rounded-full"
+                [style.background-color]="budget.categoryColor"
+              ></span>
+              <span class="truncate text-sm font-medium text-slate-800">{{
+                budget.categoryName
+              }}</span>
+            </div>
+            <div class="flex shrink-0 items-center gap-1">
+              @if (budget.status !== 'NORMAL') {
+                <svg
+                  lucideTriangleAlert
+                  [size]="16"
+                  [class]="budget.status === 'EXCEEDED' ? 'text-rose-500' : 'text-amber-500'"
+                />
+              }
+              <button
+                type="button"
+                class="rounded-lg p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+                aria-label="Sửa ngân sách"
+                (click)="openEditForm(budget)"
+              >
+                <svg lucidePencil [size]="15" />
+              </button>
+              <button
+                type="button"
+                class="rounded-lg p-1 text-slate-400 transition hover:bg-rose-50 hover:text-rose-600 disabled:opacity-50"
+                [disabled]="deletingId() === budget.id"
+                aria-label="Xóa ngân sách"
+                (click)="deleteBudget(budget)"
+              >
+                <svg lucideTrash2 [size]="15" />
+              </button>
+            </div>
           </div>
-          @if (status.ratio >= 0.8) {
-            <svg lucideTriangleAlert [size]="16" [class]="status.ratio >= 1 ? 'text-rose-500' : 'text-amber-500'" />
+
+          <div class="h-2 overflow-hidden rounded-full bg-slate-100">
+            <div
+              class="h-full rounded-full"
+              [class]="barClass(budget.status)"
+              [style.width.%]="budget.percentageUsed > 100 ? 100 : budget.percentageUsed"
+            ></div>
+          </div>
+
+          <div class="mt-3 flex items-center justify-between text-sm">
+            <span class="text-slate-500"
+              >{{ formatVnd(budget.spentAmount) }} / {{ formatVnd(budget.limitAmount) }}</span
+            >
+            <span class="font-semibold" [class]="textClass(budget.status)">
+              {{ budget.percentageUsed.toFixed(0) }}%
+            </span>
+          </div>
+
+          <div class="mt-1 flex items-center justify-between text-xs">
+            <span [class]="budget.remainingAmount < 0 ? 'text-rose-500' : 'text-slate-400'">
+              {{
+                budget.remainingAmount < 0
+                  ? 'Vượt ' + formatVnd(-budget.remainingAmount)
+                  : 'Còn lại ' + formatVnd(budget.remainingAmount)
+              }}
+            </span>
+            <span class="font-medium" [class]="textClass(budget.status)">{{
+              statusLabel[budget.status]
+            }}</span>
+          </div>
+        </div>
+      }
+    </div>
+  }
+</div>
+
+<!-- Form thêm/sửa ngân sách -->
+@if (formOpen()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4">
+    <div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+      <div class="mb-4 flex items-center justify-between">
+        <h2 class="text-base font-semibold text-slate-900">
+          {{ editingId() ? 'Sửa ngân sách' : 'Thêm ngân sách' }}
+        </h2>
+        <button
+          type="button"
+          class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100"
+          aria-label="Đóng"
+          (click)="closeForm()"
+        >
+          <svg lucideX [size]="18" />
+        </button>
+      </div>
+
+      <form [formGroup]="form" (ngSubmit)="submitForm()" class="flex flex-col gap-4">
+        <div class="flex flex-col gap-1.5">
+          <label for="budget-category" class="text-sm font-medium text-slate-700">Danh mục</label>
+          <select
+            id="budget-category"
+            formControlName="categoryId"
+            class="rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-slate-400"
+          >
+            <option value="" disabled>Chọn danh mục chi tiêu</option>
+            @for (cat of expenseCategories(); track cat.id) {
+              <option [value]="cat.id">{{ cat.name }}</option>
+            }
+          </select>
+          @if (form.controls.categoryId.touched && form.controls.categoryId.invalid) {
+            <p class="text-xs text-rose-600">Vui lòng chọn danh mục.</p>
           }
         </div>
 
-        <div class="h-2 overflow-hidden rounded-full bg-slate-100">
-          <div
-            class="h-full rounded-full"
-            [class]="barClass(status.ratio)"
-            [style.width.%]="status.ratio * 100 > 100 ? 100 : status.ratio * 100"
-          ></div>
+        <div class="flex flex-col gap-1.5">
+          <label for="budget-month" class="text-sm font-medium text-slate-700">Tháng áp dụng</label>
+          <input
+            id="budget-month"
+            type="month"
+            formControlName="month"
+            class="rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-slate-400"
+          />
+          @if (form.controls.month.touched && form.controls.month.invalid) {
+            <p class="text-xs text-rose-600">Vui lòng chọn tháng áp dụng.</p>
+          }
         </div>
 
-        <div class="mt-3 flex items-center justify-between text-sm">
-          <span class="text-slate-500">{{ formatVnd(status.spent) }} / {{ formatVnd(status.budget.limit) }}</span>
-          <span class="font-semibold" [class]="percentClass(status.ratio)">{{ (status.ratio * 100).toFixed(0) }}%</span>
+        <div class="flex flex-col gap-1.5">
+          <label for="budget-limit" class="text-sm font-medium text-slate-700">Hạn mức (VND)</label>
+          <input
+            id="budget-limit"
+            type="number"
+            min="1"
+            step="1"
+            formControlName="limitAmount"
+            class="rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-slate-400"
+          />
+          @if (form.controls.limitAmount.touched && form.controls.limitAmount.invalid) {
+            <p class="text-xs text-rose-600">Hạn mức phải là số nguyên dương.</p>
+          }
         </div>
-      </div>
-    }
+
+        @if (formError()) {
+          <p class="text-sm text-rose-600">{{ formError() }}</p>
+        }
+
+        <div class="flex items-center justify-end gap-3 border-t border-slate-100 pt-4">
+          <button
+            type="button"
+            class="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-100"
+            (click)="closeForm()"
+          >
+            Hủy
+          </button>
+          <button
+            type="submit"
+            class="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800 disabled:opacity-50"
+            [disabled]="submitting()"
+          >
+            {{ submitting() ? 'Đang lưu...' : editingId() ? 'Lưu thay đổi' : 'Thêm ngân sách' }}
+          </button>
+        </div>
+      </form>
+    </div>
   </div>
-</div>
+}
