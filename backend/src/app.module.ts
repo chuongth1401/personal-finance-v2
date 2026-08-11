@@ -3,11 +3,18 @@ import { AccountsModule } from './accounts/accounts.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { CategoriesModule } from './categories/categories.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { TransactionsModule } from './transactions/transactions.module';
 
 @Module({
-  imports: [PrismaModule, TransactionsModule, AccountsModule, CategoriesModule],
+  imports: [
+    PrismaModule,
+    TransactionsModule,
+    AccountsModule,
+    CategoriesModule,
+    DashboardModule,
+  ],
   controllers: [AppController],
   providers: [AppService],
 })
