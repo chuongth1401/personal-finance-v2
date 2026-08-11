@@ -10,7 +10,7 @@ import {
   Post,
 } from '@nestjs/common';
 
-import { DEMO_USER_ID } from '../common/constants/current-user.constant';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { CreateSavingsGoalDto } from './dto/create-savings-goal.dto';
 import { UpdateSavingsGoalDto } from './dto/update-savings-goal.dto';
 import {
@@ -23,31 +23,35 @@ import { SavingsGoalsService } from './savings-goals.service';
 export class SavingsGoalsController {
   constructor(private readonly savingsGoalsService: SavingsGoalsService) {}
 
-  // TODO(auth): thay DEMO_USER_ID bằng userId lấy từ JWT (req.user.id) khi có xác thực thật.
-  private readonly userId = DEMO_USER_ID;
-
   @Get()
-  findAll(): Promise<SavingsGoalWithProgress[]> {
-    return this.savingsGoalsService.findAll(this.userId);
+  findAll(@CurrentUser() userId: string): Promise<SavingsGoalWithProgress[]> {
+    return this.savingsGoalsService.findAll(userId);
   }
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  create(@Body() dto: CreateSavingsGoalDto): Promise<SavingsGoalResponse> {
-    return this.savingsGoalsService.create(this.userId, dto);
+  create(
+    @CurrentUser() userId: string,
+    @Body() dto: CreateSavingsGoalDto,
+  ): Promise<SavingsGoalResponse> {
+    return this.savingsGoalsService.create(userId, dto);
   }
 
   @Patch(':id')
   update(
+    @CurrentUser() userId: string,
     @Param('id') id: string,
     @Body() dto: UpdateSavingsGoalDto,
   ): Promise<SavingsGoalResponse> {
-    return this.savingsGoalsService.update(this.userId, id, dto);
+    return this.savingsGoalsService.update(userId, id, dto);
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  remove(@Param('id') id: string): Promise<void> {
-    return this.savingsGoalsService.remove(this.userId, id);
+  remove(
+    @CurrentUser() userId: string,
+    @Param('id') id: string,
+  ): Promise<void> {
+    return this.savingsGoalsService.remove(userId, id);
   }
 }

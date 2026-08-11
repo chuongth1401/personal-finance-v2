@@ -1,4 +1,5 @@
 import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
+import * as bcrypt from 'bcrypt';
 
 import { PrismaClient } from '../generated/prisma/client';
 import { DEMO_USER_ID } from '../src/common/constants/current-user.constant';
@@ -6,6 +7,9 @@ import { DEMO_USER_ID } from '../src/common/constants/current-user.constant';
 const prisma = new PrismaClient({
   adapter: new PrismaBetterSqlite3({ url: process.env.DATABASE_URL ?? 'file:./dev.db' }),
 });
+
+/** Mật khẩu demo cho môi trường dev/local - không dùng cho production. */
+const DEMO_PASSWORD = 'Demo1234!';
 
 interface CategorySeed {
   id: string;
@@ -106,13 +110,15 @@ const INCOME_DESCRIPTIONS: Record<string, { desc: string; min: number; max: numb
 };
 
 async function main(): Promise<void> {
+  const demoPasswordHash = await bcrypt.hash(DEMO_PASSWORD, 10);
   await prisma.user.upsert({
     where: { id: DEMO_USER_ID },
-    update: {},
+    update: { passwordHash: demoPasswordHash },
     create: {
       id: DEMO_USER_ID,
       email: 'demo@example.com',
       name: 'Người dùng Demo',
+      passwordHash: demoPasswordHash,
     },
   });
 
@@ -255,6 +261,7 @@ async function main(): Promise<void> {
     accounts: accounts.map((a) => a.id),
     categories: ALL_CATEGORIES.map((c) => c.id),
     transactions: transactionsToCreate.length,
+    demoLogin: { email: 'demo@example.com', password: DEMO_PASSWORD },
   });
 }
 

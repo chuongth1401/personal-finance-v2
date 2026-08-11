@@ -11,7 +11,7 @@ import {
   Query,
 } from '@nestjs/common';
 
-import { DEMO_USER_ID } from '../common/constants/current-user.constant';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { BudgetsService } from './budgets.service';
 import { CreateBudgetDto } from './dto/create-budget.dto';
 import { QueryBudgetDto } from './dto/query-budget.dto';
@@ -25,31 +25,38 @@ import {
 export class BudgetsController {
   constructor(private readonly budgetsService: BudgetsService) {}
 
-  // TODO(auth): thay DEMO_USER_ID bằng userId lấy từ JWT (req.user.id) khi có xác thực thật.
-  private readonly userId = DEMO_USER_ID;
-
   @Get()
-  findAll(@Query() query: QueryBudgetDto): Promise<BudgetWithUsage[]> {
-    return this.budgetsService.findAll(this.userId, query);
+  findAll(
+    @CurrentUser() userId: string,
+    @Query() query: QueryBudgetDto,
+  ): Promise<BudgetWithUsage[]> {
+    return this.budgetsService.findAll(userId, query);
   }
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  create(@Body() dto: CreateBudgetDto): Promise<BudgetResponse> {
-    return this.budgetsService.create(this.userId, dto);
+  create(
+    @CurrentUser() userId: string,
+    @Body() dto: CreateBudgetDto,
+  ): Promise<BudgetResponse> {
+    return this.budgetsService.create(userId, dto);
   }
 
   @Patch(':id')
   update(
+    @CurrentUser() userId: string,
     @Param('id') id: string,
     @Body() dto: UpdateBudgetDto,
   ): Promise<BudgetResponse> {
-    return this.budgetsService.update(this.userId, id, dto);
+    return this.budgetsService.update(userId, id, dto);
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  remove(@Param('id') id: string): Promise<void> {
-    return this.budgetsService.remove(this.userId, id);
+  remove(
+    @CurrentUser() userId: string,
+    @Param('id') id: string,
+  ): Promise<void> {
+    return this.budgetsService.remove(userId, id);
   }
 }

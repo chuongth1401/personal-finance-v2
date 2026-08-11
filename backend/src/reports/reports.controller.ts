@@ -1,7 +1,7 @@
 import { Controller, Get, Query, Res } from '@nestjs/common';
 import type { Response } from 'express';
 
-import { DEMO_USER_ID } from '../common/constants/current-user.constant';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { QueryReportsMonthlyDto } from './dto/query-reports-monthly.dto';
 import { QueryReportsYearlyDto } from './dto/query-reports-yearly.dto';
 import { MonthlyReport, YearlyReport } from './interfaces/report.interface';
@@ -11,28 +11,29 @@ import { ReportsService } from './reports.service';
 export class ReportsController {
   constructor(private readonly reportsService: ReportsService) {}
 
-  // TODO(auth): thay DEMO_USER_ID bằng userId lấy từ JWT (req.user.id) khi có xác thực thật.
-  private readonly userId = DEMO_USER_ID;
-
   @Get('monthly')
-  getMonthly(@Query() query: QueryReportsMonthlyDto): Promise<MonthlyReport> {
-    return this.reportsService.getMonthlyReport(this.userId, query.month);
+  getMonthly(
+    @CurrentUser() userId: string,
+    @Query() query: QueryReportsMonthlyDto,
+  ): Promise<MonthlyReport> {
+    return this.reportsService.getMonthlyReport(userId, query.month);
   }
 
   @Get('yearly')
-  getYearly(@Query() query: QueryReportsYearlyDto): Promise<YearlyReport> {
-    return this.reportsService.getYearlyReport(this.userId, query.year);
+  getYearly(
+    @CurrentUser() userId: string,
+    @Query() query: QueryReportsYearlyDto,
+  ): Promise<YearlyReport> {
+    return this.reportsService.getYearlyReport(userId, query.year);
   }
 
   @Get('export/csv')
   async exportCsv(
+    @CurrentUser() userId: string,
     @Query() query: QueryReportsMonthlyDto,
     @Res() res: Response,
   ): Promise<void> {
-    const csv = await this.reportsService.exportMonthlyCsv(
-      this.userId,
-      query.month,
-    );
+    const csv = await this.reportsService.exportMonthlyCsv(userId, query.month);
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader(
       'Content-Disposition',

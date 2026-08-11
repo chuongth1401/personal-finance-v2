@@ -1,9 +1,22 @@
 import { Routes } from '@angular/router';
 
+import { authGuard, guestGuard } from './core/auth/auth.guard';
+
 export const routes: Routes = [
+  {
+    path: 'login',
+    loadComponent: () => import('./features/auth/login/login').then((m) => m.Login),
+    canActivate: [guestGuard],
+  },
+  {
+    path: 'register',
+    loadComponent: () => import('./features/auth/register/register').then((m) => m.Register),
+    canActivate: [guestGuard],
+  },
   {
     path: '',
     loadComponent: () => import('./layout/shell/shell').then((m) => m.Shell),
+    canActivate: [authGuard],
     children: [
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
       {
@@ -13,7 +26,8 @@ export const routes: Routes = [
       },
       {
         path: 'transactions',
-        loadComponent: () => import('./features/transactions/transactions').then((m) => m.Transactions),
+        loadComponent: () =>
+          import('./features/transactions/transactions').then((m) => m.Transactions),
         data: { title: 'Giao dịch' },
       },
       {

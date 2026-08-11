@@ -1,6 +1,6 @@
 import { Controller, Get, Query } from '@nestjs/common';
 
-import { DEMO_USER_ID } from '../common/constants/current-user.constant';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { DashboardService } from './dashboard.service';
 import { QueryDashboardSummaryDto } from './dto/query-dashboard-summary.dto';
 import { DashboardSummary } from './interfaces/dashboard-summary.interface';
@@ -9,13 +9,11 @@ import { DashboardSummary } from './interfaces/dashboard-summary.interface';
 export class DashboardController {
   constructor(private readonly dashboardService: DashboardService) {}
 
-  // TODO(auth): thay DEMO_USER_ID bằng userId lấy từ JWT (req.user.id) khi có xác thực thật.
-  private readonly userId = DEMO_USER_ID;
-
   @Get('summary')
   getSummary(
+    @CurrentUser() userId: string,
     @Query() query: QueryDashboardSummaryDto,
   ): Promise<DashboardSummary> {
-    return this.dashboardService.getSummary(this.userId, query.month);
+    return this.dashboardService.getSummary(userId, query.month);
   }
 }

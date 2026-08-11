@@ -11,46 +11,60 @@ import {
   Query,
 } from '@nestjs/common';
 
-import { DEMO_USER_ID } from '../common/constants/current-user.constant';
+import { Transaction } from '../../generated/prisma/client';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { QueryTransactionDto } from './dto/query-transaction.dto';
 import { UpdateTransactionDto } from './dto/update-transaction.dto';
 import {
-  TransactionsService,
   PaginatedTransactions,
+  TransactionsService,
 } from './transactions.service';
 
 @Controller('transactions')
 export class TransactionsController {
   constructor(private readonly transactionsService: TransactionsService) {}
 
-  // TODO(auth): thay DEMO_USER_ID bằng userId lấy từ JWT (req.user.id) khi có xác thực thật.
-  private readonly userId = DEMO_USER_ID;
-
   @Get()
-  findAll(@Query() query: QueryTransactionDto): Promise<PaginatedTransactions> {
-    return this.transactionsService.findAll(this.userId, query);
+  findAll(
+    @CurrentUser() userId: string,
+    @Query() query: QueryTransactionDto,
+  ): Promise<PaginatedTransactions> {
+    return this.transactionsService.findAll(userId, query);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.transactionsService.findOne(this.userId, id);
+  findOne(
+    @CurrentUser() userId: string,
+    @Param('id') id: string,
+  ): Promise<Transaction> {
+    return this.transactionsService.findOne(userId, id);
   }
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  create(@Body() dto: CreateTransactionDto) {
-    return this.transactionsService.create(this.userId, dto);
+  create(
+    @CurrentUser() userId: string,
+    @Body() dto: CreateTransactionDto,
+  ): Promise<Transaction> {
+    return this.transactionsService.create(userId, dto);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() dto: UpdateTransactionDto) {
-    return this.transactionsService.update(this.userId, id, dto);
+  update(
+    @CurrentUser() userId: string,
+    @Param('id') id: string,
+    @Body() dto: UpdateTransactionDto,
+  ): Promise<Transaction> {
+    return this.transactionsService.update(userId, id, dto);
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  remove(@Param('id') id: string): Promise<void> {
-    return this.transactionsService.remove(this.userId, id);
+  remove(
+    @CurrentUser() userId: string,
+    @Param('id') id: string,
+  ): Promise<void> {
+    return this.transactionsService.remove(userId, id);
   }
 }
