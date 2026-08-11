@@ -4,7 +4,7 @@ import {
   OnModuleDestroy,
   OnModuleInit,
 } from '@nestjs/common';
-import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
+import { PrismaNeon } from '@prisma/adapter-neon';
 
 import { PrismaClient } from '../../generated/prisma/client';
 
@@ -16,10 +16,13 @@ export class PrismaService
   private readonly logger = new Logger(PrismaService.name);
 
   constructor() {
+    if (!process.env.DATABASE_URL) {
+      throw new Error(
+        'Thiếu biến môi trường DATABASE_URL (connection string Postgres/Neon).',
+      );
+    }
     super({
-      adapter: new PrismaBetterSqlite3({
-        url: process.env.DATABASE_URL ?? 'file:./dev.db',
-      }),
+      adapter: new PrismaNeon({ connectionString: process.env.DATABASE_URL }),
     });
   }
 

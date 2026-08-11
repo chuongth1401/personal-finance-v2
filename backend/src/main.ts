@@ -8,7 +8,7 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.enableShutdownHooks();
   app.enableCors({
-    origin: process.env.CORS_ORIGIN?.split(',') ?? 'http://localhost:4200',
+    origin: process.env.FRONTEND_ORIGIN ?? 'http://localhost:4200',
   });
   app.useGlobalPipes(
     new ValidationPipe({
