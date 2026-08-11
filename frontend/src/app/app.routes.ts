@@ -31,6 +31,11 @@ export const routes: Routes = [
         data: { title: 'Giao dịch' },
       },
       {
+        path: 'receipts',
+        loadComponent: () => import('./features/receipts/receipts').then((m) => m.Receipts),
+        data: { title: 'Quét hoá đơn' },
+      },
+      {
         path: 'budgets',
         loadComponent: () => import('./features/budgets/budgets').then((m) => m.Budgets),
         data: { title: 'Ngân sách' },

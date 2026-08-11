@@ -5,6 +5,7 @@ import {
   LucideChartLine,
   LucideFileText,
   LucideLayoutDashboard,
+  LucideScanLine,
   LucideSettings,
   LucideTarget,
   LucideWallet,
@@ -15,12 +16,21 @@ import {
 interface NavItem {
   path: string;
   label: string;
-  icon: 'dashboard' | 'transactions' | 'budgets' | 'goals' | 'analytics' | 'reports' | 'settings';
+  icon:
+    | 'dashboard'
+    | 'transactions'
+    | 'receipts'
+    | 'budgets'
+    | 'goals'
+    | 'analytics'
+    | 'reports'
+    | 'settings';
 }
 
 const NAV_ITEMS: NavItem[] = [
   { path: '/dashboard', label: 'Tổng quan', icon: 'dashboard' },
   { path: '/transactions', label: 'Giao dịch', icon: 'transactions' },
+  { path: '/receipts', label: 'Quét hoá đơn', icon: 'receipts' },
   { path: '/budgets', label: 'Ngân sách', icon: 'budgets' },
   { path: '/goals', label: 'Mục tiêu', icon: 'goals' },
   { path: '/analytics', label: 'Phân tích', icon: 'analytics' },
@@ -39,6 +49,7 @@ const NAV_ITEMS: NavItem[] = [
     LucideTarget,
     LucideChartLine,
     LucideFileText,
+    LucideScanLine,
     LucideSettings,
     LucideWalletCards,
     LucideX,
@@ -53,7 +64,9 @@ const NAV_ITEMS: NavItem[] = [
           <span class="flex size-9 items-center justify-center rounded-xl bg-slate-900 text-white">
             <svg lucideWalletCards [size]="18" />
           </span>
-          <span class="text-base font-semibold tracking-tight text-slate-900">Personal Finance</span>
+          <span class="text-base font-semibold tracking-tight text-slate-900"
+            >Personal Finance</span
+          >
         </div>
         <button
           type="button"
@@ -79,6 +92,9 @@ const NAV_ITEMS: NavItem[] = [
               }
               @case ('transactions') {
                 <svg lucideArrowLeftRight [size]="18" />
+              }
+              @case ('receipts') {
+                <svg lucideScanLine [size]="18" />
               }
               @case ('budgets') {
                 <svg lucideWallet [size]="18" />
