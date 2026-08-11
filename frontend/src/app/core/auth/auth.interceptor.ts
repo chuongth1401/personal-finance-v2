@@ -6,8 +6,12 @@ import { environment } from '../../../environments/environment';
 import { AuthService } from './auth.service';
 import { TokenStorageService } from './token-storage.service';
 
-/** Endpoint công khai - 401 ở đây (vd. sai mật khẩu) không đồng nghĩa với hết phiên. */
-const PUBLIC_AUTH_PATHS = ['/auth/login', '/auth/register'];
+/**
+ * Endpoint công khai - 401 ở đây không đồng nghĩa với hết phiên, và tuyệt đối
+ * không được kích hoạt logout() (vốn tự gọi POST /auth/logout) từ chính lỗi
+ * của /auth/logout, nếu không sẽ tạo vòng lặp vô hạn khi token đã hết hạn.
+ */
+const PUBLIC_AUTH_PATHS = ['/auth/login', '/auth/register', '/auth/logout'];
 
 /** Gắn Bearer token cho request tới API backend, và tự đăng xuất khi token hết hạn/không hợp lệ. */
 export const authInterceptor: HttpInterceptorFn = (req, next) => {

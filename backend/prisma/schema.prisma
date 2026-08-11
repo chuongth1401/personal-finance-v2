@@ -213,8 +213,9 @@ model RecurringTransaction {
   @@index([nextRunDate])
 }
 
-/// Gợi ý/cảnh báo tài chính (vượt ngân sách, xu hướng chi tiêu...).
-/// type: OVERSPENDING | SAVING_OPPORTUNITY | BUDGET_ALERT | TREND | GOAL_PROGRESS
+/// Gợi ý/cảnh báo tài chính do FinancialAnalysisModule sinh ra (quy tắc thuần,
+/// chưa gọi AI - xem backend/CLAUDE.md).
+/// type: ANOMALY | RECURRING_CANDIDATE | BUDGET_RISK | FORECAST
 /// severity: INFO | WARNING | CRITICAL
 model FinancialInsight {
   id          String    @id @default(cuid())
@@ -223,7 +224,9 @@ model FinancialInsight {
   type        String
   severity    String
   title       String
-  message     String
+  description String
+  /// Mảng transactionId liên quan, lưu dạng chuỗi JSON (SQLite không có kiểu mảng).
+  relatedTransactionIds String @default("[]")
   periodStart DateTime?
   periodEnd   DateTime?
   isRead      Boolean   @default(false)
@@ -234,4 +237,5 @@ model FinancialInsight {
 
   @@index([userId])
   @@index([userId, isRead])
+  @@index([userId, periodStart, periodEnd])
 }

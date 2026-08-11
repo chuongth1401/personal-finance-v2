@@ -36,7 +36,10 @@ export class AuthController {
    * JWT access-token thuần là stateless - không có gì để thu hồi phía server.
    * Endpoint tồn tại để client có nơi gọi khi đăng xuất (và làm chỗ mở rộng
    * sau này, vd. audit log/token blocklist) mà không đổi API contract.
+   * @Public() vì client có thể gọi logout ngay cả khi token đã hết hạn/không
+   * hợp lệ - bắt buộc xác thực ở đây sẽ khiến logout thất bại đúng lúc cần nó nhất.
    */
+  @Public()
   @Post('logout')
   @HttpCode(HttpStatus.NO_CONTENT)
   logout(): void {}
