@@ -32,6 +32,11 @@ export class QueryTransactionDto {
   @IsString()
   categoryId?: string;
 
+  /** Tìm kiếm theo nội dung ghi chú (note), không phân biệt phải khớp toàn bộ. */
+  @IsOptional()
+  @IsString()
+  search?: string;
+
   @IsOptional()
   @Type(() => Number)
   @IsInt()

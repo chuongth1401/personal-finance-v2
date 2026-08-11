@@ -48,6 +48,8 @@ export interface TransactionQuery {
   type?: TransactionType;
   accountId?: string;
   categoryId?: string;
+  /** Tìm kiếm theo nội dung ghi chú (note). */
+  search?: string;
   page?: number;
   pageSize?: number;
 }

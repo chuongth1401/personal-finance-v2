@@ -29,14 +29,23 @@ export class TransactionsService {
     userId: string,
     query: QueryTransactionDto,
   ): Promise<PaginatedTransactions> {
-    const { dateFrom, dateTo, type, accountId, categoryId, page, pageSize } =
-      query;
+    const {
+      dateFrom,
+      dateTo,
+      type,
+      accountId,
+      categoryId,
+      search,
+      page,
+      pageSize,
+    } = query;
 
     const where: Prisma.TransactionWhereInput = {
       userId,
       ...(type && { type }),
       ...(accountId && { accountId }),
       ...(categoryId && { categoryId }),
+      ...(search && { note: { contains: search } }),
       ...((dateFrom || dateTo) && {
         date: {
           ...(dateFrom && { gte: new Date(dateFrom) }),
@@ -97,7 +106,7 @@ export class TransactionsService {
     }
 
     if (dto.categoryId) {
-      await this.assertCategoryOwnership(userId, dto.categoryId);
+      await this.assertCategoryMatchesType(userId, dto.categoryId, dto.type);
     }
 
     return this.prisma.transaction.create({
@@ -147,8 +156,8 @@ export class TransactionsService {
       );
     }
 
-    if (nextCategoryId) {
-      await this.assertCategoryOwnership(userId, nextCategoryId);
+    if (nextCategoryId && nextType !== TransactionType.TRANSFER) {
+      await this.assertCategoryMatchesType(userId, nextCategoryId, nextType);
     }
 
     return this.prisma.transaction.update({
@@ -185,9 +194,14 @@ export class TransactionsService {
     }
   }
 
-  private async assertCategoryOwnership(
+  /**
+   * Kiểm tra category tồn tại/thuộc về user, và loại danh mục (INCOME/EXPENSE)
+   * phải khớp với loại giao dịch - vd. giao dịch EXPENSE không được gắn category INCOME.
+   */
+  private async assertCategoryMatchesType(
     userId: string,
     categoryId: string,
+    type: TransactionType,
   ): Promise<void> {
     const category = await this.prisma.category.findFirst({
       where: { id: categoryId, userId },
@@ -195,6 +209,11 @@ export class TransactionsService {
     if (!category) {
       throw new BadRequestException(
         `Danh mục không tồn tại hoặc không thuộc về bạn: ${categoryId}`,
+      );
+    }
+    if (category.kind !== (type as string)) {
+      throw new BadRequestException(
+        `Danh mục "${category.name}" thuộc loại ${category.kind}, không phù hợp với giao dịch ${type}.`,
       );
     }
   }

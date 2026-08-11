@@ -9,7 +9,13 @@ import {
   ValidationErrors,
   Validators,
 } from '@angular/forms';
-import { LucideArrowDownRight, LucideArrowUpRight, LucidePlus, LucideTrash2, LucideX } from '@lucide/angular';
+import {
+  LucideArrowDownRight,
+  LucideArrowUpRight,
+  LucidePlus,
+  LucideTrash2,
+  LucideX,
+} from '@lucide/angular';
 import { forkJoin } from 'rxjs';
 
 import { AccountsApiService } from '../../core/api/accounts-api.service';
@@ -27,7 +33,6 @@ import { formatVnd } from '../../core/utils/currency';
 
 interface TransactionFormControls {
   accountId: FormControl<string>;
-  toAccountId: FormControl<string | null>;
   categoryId: FormControl<string | null>;
   type: FormControl<TransactionType>;
   amount: FormControl<number | null>;
@@ -50,15 +55,10 @@ function integerAmountValidator(control: AbstractControl): ValidationErrors | nu
 
 function crossFieldValidator(group: AbstractControl): ValidationErrors | null {
   const type = group.get('type')?.value as TransactionType;
-  const accountId = group.get('accountId')?.value as string;
-  const toAccountId = group.get('toAccountId')?.value as string | null;
   const categoryId = group.get('categoryId')?.value as string | null;
 
-  if (type === 'TRANSFER') {
-    if (!toAccountId) return { toAccountRequired: true };
-    if (toAccountId === accountId) return { toAccountSameAsAccount: true };
-    return null;
-  }
+  // TRANSFER chưa được hỗ trợ lưu - nút Lưu sẽ bị khoá riêng, không cần validate thêm ở đây.
+  if (type === 'TRANSFER') return null;
   if (!categoryId) return { categoryRequired: true };
   return null;
 }
@@ -92,7 +92,12 @@ export class Transactions implements OnInit {
   protected readonly referenceDataError = signal<string | null>(null);
 
   protected readonly transactions = signal<Transaction[]>([]);
-  protected readonly meta = signal<PaginationMeta>({ page: 1, pageSize: 10, total: 0, totalPages: 1 });
+  protected readonly meta = signal<PaginationMeta>({
+    page: 1,
+    pageSize: 10,
+    total: 0,
+    totalPages: 1,
+  });
   protected readonly loading = signal(false);
   protected readonly listError = signal<string | null>(null);
 
@@ -101,6 +106,7 @@ export class Transactions implements OnInit {
   protected readonly filterCategoryId = signal<string>('');
   protected readonly filterDateFrom = signal<string>('');
   protected readonly filterDateTo = signal<string>('');
+  protected readonly filterSearch = signal<string>('');
   private readonly page = signal(1);
   protected readonly pageSize = signal(10);
 
@@ -113,15 +119,20 @@ export class Transactions implements OnInit {
   protected readonly form = new FormGroup<TransactionFormControls>(
     {
       accountId: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
-      toAccountId: new FormControl<string | null>(null),
       categoryId: new FormControl<string | null>(null),
-      type: new FormControl<TransactionType>('EXPENSE', { nonNullable: true, validators: [Validators.required] }),
+      type: new FormControl<TransactionType>('EXPENSE', {
+        nonNullable: true,
+        validators: [Validators.required],
+      }),
       amount: new FormControl<number | null>(null, [
         Validators.required,
         Validators.min(1),
         integerAmountValidator,
       ]),
-      date: new FormControl(todayDateString(), { nonNullable: true, validators: [Validators.required] }),
+      date: new FormControl(todayDateString(), {
+        nonNullable: true,
+        validators: [Validators.required],
+      }),
       description: new FormControl('', {
         nonNullable: true,
         validators: [Validators.required, Validators.maxLength(255)],
@@ -139,6 +150,8 @@ export class Transactions implements OnInit {
     const kind = this.selectedType() === 'INCOME' ? 'INCOME' : 'EXPENSE';
     return this.categories().filter((c) => c.kind === kind);
   });
+
+  protected readonly isTransferSelected = computed(() => this.selectedType() === 'TRANSFER');
 
   ngOnInit(): void {
     this.loadReferenceData();
@@ -168,6 +181,7 @@ export class Transactions implements OnInit {
         categoryId: this.filterCategoryId() || undefined,
         dateFrom: this.filterDateFrom() || undefined,
         dateTo: this.filterDateTo() || undefined,
+        search: this.filterSearch().trim() || undefined,
         page: this.page(),
         pageSize: this.pageSize(),
       })
@@ -204,6 +218,10 @@ export class Transactions implements OnInit {
     this.filterDateTo.set((event.target as HTMLInputElement).value);
   }
 
+  protected onSearchChange(event: Event): void {
+    this.filterSearch.set((event.target as HTMLInputElement).value);
+  }
+
   protected applyFilters(): void {
     this.page.set(1);
     this.loadTransactions();
@@ -215,6 +233,7 @@ export class Transactions implements OnInit {
     this.filterCategoryId.set('');
     this.filterDateFrom.set('');
     this.filterDateTo.set('');
+    this.filterSearch.set('');
     this.page.set(1);
     this.loadTransactions();
   }
@@ -230,7 +249,6 @@ export class Transactions implements OnInit {
     this.formError.set(null);
     this.form.reset({
       accountId: this.accounts()[0]?.id ?? '',
-      toAccountId: null,
       categoryId: null,
       type: 'EXPENSE',
       amount: null,
@@ -246,7 +264,6 @@ export class Transactions implements OnInit {
     this.formError.set(null);
     this.form.reset({
       accountId: transaction.accountId,
-      toAccountId: transaction.toAccountId,
       categoryId: transaction.categoryId,
       type: transaction.type,
       amount: transaction.amount,
@@ -262,6 +279,10 @@ export class Transactions implements OnInit {
   }
 
   protected submitForm(): void {
+    if (this.isTransferSelected()) {
+      // Nút Lưu đã bị khoá trong template cho trường hợp này; kiểm tra lại cho chắc chắn.
+      return;
+    }
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;
@@ -277,8 +298,7 @@ export class Transactions implements OnInit {
     const request$ = editingId
       ? this.transactionsApi.update(editingId, {
           accountId: value.accountId,
-          toAccountId: value.type === 'TRANSFER' ? value.toAccountId : null,
-          categoryId: value.type === 'TRANSFER' ? null : value.categoryId,
+          categoryId: value.categoryId,
           type: value.type,
           amount: value.amount ?? 0,
           date: isoDate,
@@ -287,8 +307,7 @@ export class Transactions implements OnInit {
         })
       : this.transactionsApi.create({
           accountId: value.accountId,
-          toAccountId: value.type === 'TRANSFER' ? (value.toAccountId ?? undefined) : undefined,
-          categoryId: value.type === 'TRANSFER' ? undefined : (value.categoryId ?? undefined),
+          categoryId: value.categoryId ?? undefined,
           type: value.type,
           amount: value.amount ?? 0,
           date: isoDate,
