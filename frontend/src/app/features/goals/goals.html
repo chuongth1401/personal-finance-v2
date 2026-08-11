@@ -1,37 +1,321 @@
 <div class="flex flex-col gap-4">
-  <div>
-    <h2 class="text-sm font-semibold text-slate-900">Mục tiêu tiết kiệm</h2>
-    <p class="text-xs text-slate-500">Tiến độ hướng tới từng mục tiêu tài chính</p>
+  <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <h2 class="text-sm font-semibold text-slate-900">Mục tiêu tiết kiệm</h2>
+      <p class="text-xs text-slate-500">Tiến độ hướng tới từng mục tiêu tài chính</p>
+    </div>
+
+    <div class="flex flex-wrap items-center gap-2">
+      <div
+        class="flex items-center gap-1 rounded-xl border border-slate-200 bg-white p-1 shadow-sm"
+      >
+        @for (opt of statusFilterOptions; track opt.value) {
+          <button
+            type="button"
+            class="rounded-lg px-3 py-1.5 text-xs font-medium transition"
+            [class]="
+              statusFilter() === opt.value
+                ? 'bg-slate-900 text-white'
+                : 'text-slate-600 hover:bg-slate-100'
+            "
+            (click)="setStatusFilter(opt.value)"
+          >
+            {{ opt.label }}
+          </button>
+        }
+      </div>
+
+      <button
+        type="button"
+        class="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-3.5 py-2 text-sm font-medium text-white transition hover:bg-slate-800"
+        (click)="openCreateForm()"
+      >
+        <svg lucidePlus [size]="16" />
+        Thêm mục tiêu
+      </button>
+    </div>
   </div>
 
-  <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-    @for (goal of data.goals(); track goal.id) {
-      <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
-        <div class="mb-4 flex items-center gap-3">
-          <span class="flex size-10 items-center justify-center rounded-xl" [style.background-color]="goal.color + '1f'" [style.color]="goal.color">
-            <svg lucideTarget [size]="18" />
+  @if (loading()) {
+    <!-- Skeleton -->
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      @for (i of [1, 2, 3, 4, 5, 6]; track i) {
+        <div class="animate-pulse rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div class="h-10 w-10 rounded-xl bg-slate-200"></div>
+          <div class="mt-4 h-3 w-28 rounded bg-slate-200"></div>
+          <div class="mt-4 h-2 w-full rounded-full bg-slate-100"></div>
+          <div class="mt-3 h-3 w-32 rounded bg-slate-100"></div>
+        </div>
+      }
+    </div>
+  } @else if (error()) {
+    <div
+      class="flex flex-col items-center gap-3 rounded-2xl border border-rose-200 bg-rose-50 p-8 text-center"
+    >
+      <p class="text-sm text-rose-600">{{ error() }}</p>
+      <button
+        type="button"
+        class="rounded-xl border border-rose-200 bg-white px-3.5 py-2 text-sm font-medium text-rose-600 transition hover:bg-rose-100"
+        (click)="loadGoals()"
+      >
+        Thử lại
+      </button>
+    </div>
+  } @else if (filteredGoals().length === 0) {
+    <div
+      class="flex flex-col items-center gap-3 rounded-2xl border border-slate-200 bg-white p-10 text-center"
+    >
+      <p class="text-sm text-slate-400">Chưa có mục tiêu nào phù hợp bộ lọc.</p>
+      <button
+        type="button"
+        class="rounded-xl border border-slate-200 px-3.5 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-100"
+        (click)="openCreateForm()"
+      >
+        Thêm mục tiêu đầu tiên
+      </button>
+    </div>
+  } @else {
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      @for (goal of filteredGoals(); track goal.id) {
+        <div
+          class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+        >
+          <div class="mb-3 flex items-start justify-between gap-2">
+            <div class="flex min-w-0 items-center gap-3">
+              <span
+                class="flex size-10 shrink-0 items-center justify-center rounded-xl"
+                [style.background-color]="(goal.color ?? '#64748b') + '1f'"
+                [style.color]="goal.color ?? '#64748b'"
+              >
+                <app-category-icon [icon]="goal.icon" [size]="18" />
+              </span>
+              <div class="min-w-0">
+                <p class="truncate text-sm font-semibold text-slate-800">{{ goal.name }}</p>
+                <p class="text-xs text-slate-500">
+                  {{ goal.targetDate ? 'Hạn: ' + goal.targetDate.slice(0, 10) : 'Chưa đặt hạn' }}
+                </p>
+              </div>
+            </div>
+            <div class="flex shrink-0 items-center gap-1">
+              <button
+                type="button"
+                class="rounded-lg p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+                aria-label="Sửa mục tiêu"
+                (click)="openEditForm(goal)"
+              >
+                <svg lucidePencil [size]="15" />
+              </button>
+              <button
+                type="button"
+                class="rounded-lg p-1 text-slate-400 transition hover:bg-rose-50 hover:text-rose-600 disabled:opacity-50"
+                [disabled]="deletingId() === goal.id"
+                aria-label="Xóa mục tiêu"
+                (click)="deleteGoal(goal)"
+              >
+                <svg lucideTrash2 [size]="15" />
+              </button>
+            </div>
+          </div>
+
+          <span
+            class="mb-3 inline-block rounded-full px-2.5 py-1 text-xs font-medium"
+            [class]="paceLabel(goal).class"
+          >
+            {{ paceLabel(goal).text }}
           </span>
-          <div class="min-w-0">
-            <p class="truncate text-sm font-semibold text-slate-800">{{ goal.name }}</p>
-            <p class="text-xs text-slate-500">Còn {{ daysLeft(goal.deadline) }} ngày</p>
+
+          <div class="h-2 overflow-hidden rounded-full bg-slate-100">
+            <div
+              class="h-full rounded-full"
+              [style.background-color]="goal.color ?? '#0ea5e9'"
+              [style.width.%]="progressPercent(goal)"
+            ></div>
+          </div>
+
+          <div class="mt-3 flex items-center justify-between text-sm">
+            <span class="text-slate-500"
+              >{{ formatVnd(goal.currentAmount) }} / {{ formatVnd(goal.targetAmount) }}</span
+            >
+            <span class="font-semibold text-slate-800"
+              >{{ goal.progressPercentage.toFixed(0) }}%</span
+            >
+          </div>
+
+          <p class="mt-2 border-t border-slate-100 pt-2 text-xs text-slate-500">
+            @if (goal.status === 'COMPLETED' || goal.monthlyContributionNeeded === 0) {
+              Đã đạt mục tiêu tiết kiệm.
+            } @else if (goal.monthlyContributionNeeded !== null) {
+              Cần tiết kiệm
+              <span class="font-medium text-slate-700">{{
+                formatVnd(goal.monthlyContributionNeeded)
+              }}</span
+              >/tháng để đúng hạn.
+            } @else {
+              Đặt hạn hoàn thành để tính số tiền cần tiết kiệm mỗi tháng.
+            }
+          </p>
+        </div>
+      }
+    </div>
+  }
+</div>
+
+<!-- Form thêm/sửa mục tiêu -->
+@if (formOpen()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4">
+    <div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+      <div class="mb-4 flex items-center justify-between">
+        <h2 class="text-base font-semibold text-slate-900">
+          {{ editingId() ? 'Sửa mục tiêu' : 'Thêm mục tiêu' }}
+        </h2>
+        <button
+          type="button"
+          class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100"
+          aria-label="Đóng"
+          (click)="closeForm()"
+        >
+          <svg lucideX [size]="18" />
+        </button>
+      </div>
+
+      <form [formGroup]="form" (ngSubmit)="submitForm()" class="flex flex-col gap-4">
+        <div class="flex flex-col gap-1.5">
+          <label for="goal-name" class="text-sm font-medium text-slate-700">Tên mục tiêu</label>
+          <input
+            id="goal-name"
+            type="text"
+            formControlName="name"
+            class="rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-slate-400"
+          />
+          @if (form.controls.name.touched && form.controls.name.invalid) {
+            <p class="text-xs text-rose-600">Vui lòng nhập tên mục tiêu (tối đa 100 ký tự).</p>
+          }
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div class="flex flex-col gap-1.5">
+            <label for="goal-target" class="text-sm font-medium text-slate-700"
+              >Số tiền mục tiêu (VND)</label
+            >
+            <input
+              id="goal-target"
+              type="number"
+              min="1"
+              step="1"
+              formControlName="targetAmount"
+              class="rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-slate-400"
+            />
+            @if (form.controls.targetAmount.touched && form.controls.targetAmount.invalid) {
+              <p class="text-xs text-rose-600">Phải là số nguyên dương.</p>
+            }
+          </div>
+
+          <div class="flex flex-col gap-1.5">
+            <label for="goal-current" class="text-sm font-medium text-slate-700">Đã có (VND)</label>
+            <input
+              id="goal-current"
+              type="number"
+              min="0"
+              step="1"
+              formControlName="currentAmount"
+              class="rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-slate-400"
+            />
+            @if (form.controls.currentAmount.touched && form.controls.currentAmount.invalid) {
+              <p class="text-xs text-rose-600">Phải là số nguyên không âm.</p>
+            }
           </div>
         </div>
 
-        <div class="h-2 overflow-hidden rounded-full bg-slate-100">
-          <div
-            class="h-full rounded-full"
-            [style.background-color]="goal.color"
-            [style.width.%]="progressRatio(goal.currentAmount, goal.targetAmount) * 100"
-          ></div>
+        <div class="flex flex-col gap-1.5">
+          <label for="goal-date" class="text-sm font-medium text-slate-700"
+            >Hạn hoàn thành (không bắt buộc)</label
+          >
+          <input
+            id="goal-date"
+            type="date"
+            formControlName="targetDate"
+            class="rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-slate-400"
+          />
         </div>
 
-        <div class="mt-3 flex items-center justify-between text-sm">
-          <span class="text-slate-500">{{ formatVnd(goal.currentAmount) }} / {{ formatVnd(goal.targetAmount) }}</span>
-          <span class="font-semibold text-slate-800">
-            {{ (progressRatio(goal.currentAmount, goal.targetAmount) * 100).toFixed(0) }}%
-          </span>
+        <div class="grid grid-cols-2 gap-3">
+          <div class="flex flex-col gap-1.5">
+            <label for="goal-icon" class="text-sm font-medium text-slate-700">Icon</label>
+            <select
+              id="goal-icon"
+              formControlName="icon"
+              class="rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-slate-400"
+            >
+              @for (opt of iconOptions; track opt.value) {
+                <option [value]="opt.value">{{ opt.label }}</option>
+              }
+            </select>
+          </div>
+
+          <div class="flex flex-col gap-1.5">
+            <label for="goal-color" class="text-sm font-medium text-slate-700">Màu</label>
+            <div class="flex items-center gap-2">
+              <input
+                id="goal-color"
+                type="color"
+                formControlName="color"
+                class="h-[38px] w-12 shrink-0 cursor-pointer rounded-lg border border-slate-200"
+              />
+              <span class="text-xs text-slate-500">{{ form.controls.color.value }}</span>
+            </div>
+          </div>
         </div>
-      </div>
-    }
+
+        <div class="flex flex-col gap-1.5">
+          <label for="goal-status" class="text-sm font-medium text-slate-700">Trạng thái</label>
+          <select
+            id="goal-status"
+            formControlName="status"
+            class="rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-slate-400"
+          >
+            @for (opt of goalStatusOptions; track opt.value) {
+              <option [value]="opt.value">{{ opt.label }}</option>
+            }
+          </select>
+        </div>
+
+        <div
+          class="flex items-center gap-2 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5"
+        >
+          <span class="text-xs text-slate-500">Xem trước:</span>
+          <span
+            class="flex size-8 items-center justify-center rounded-lg"
+            [style.background-color]="form.controls.color.value + '1f'"
+            [style.color]="form.controls.color.value"
+          >
+            <app-category-icon [icon]="form.controls.icon.value" [size]="16" />
+          </span>
+          <span class="text-sm font-medium text-slate-700">{{
+            form.controls.name.value || 'Tên mục tiêu'
+          }}</span>
+        </div>
+
+        @if (formError()) {
+          <p class="text-sm text-rose-600">{{ formError() }}</p>
+        }
+
+        <div class="flex items-center justify-end gap-3 border-t border-slate-100 pt-4">
+          <button
+            type="button"
+            class="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-100"
+            (click)="closeForm()"
+          >
+            Hủy
+          </button>
+          <button
+            type="submit"
+            class="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800 disabled:opacity-50"
+            [disabled]="submitting()"
+          >
+            {{ submitting() ? 'Đang lưu...' : editingId() ? 'Lưu thay đổi' : 'Thêm mục tiêu' }}
+          </button>
+        </div>
+      </form>
+    </div>
   </div>
-</div>
+}

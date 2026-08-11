@@ -6,6 +6,7 @@ import { BudgetsModule } from './budgets/budgets.module';
 import { CategoriesModule } from './categories/categories.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { SavingsGoalsModule } from './savings-goals/savings-goals.module';
 import { TransactionsModule } from './transactions/transactions.module';
 
 @Module({
@@ -16,6 +17,7 @@ import { TransactionsModule } from './transactions/transactions.module';
     CategoriesModule,
     DashboardModule,
     BudgetsModule,
+    SavingsGoalsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
