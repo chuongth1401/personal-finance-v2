@@ -9,3 +9,15 @@ export interface Account {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface CreateAccountRequest {
+  name: string;
+  type: AccountType;
+  balance?: number;
+}
+
+export interface UpdateAccountRequest {
+  name?: string;
+  type?: AccountType;
+  balance?: number;
+}

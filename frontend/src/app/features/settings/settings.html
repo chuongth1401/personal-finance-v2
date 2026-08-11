@@ -1,74 +1,405 @@
-<div class="max-w-2xl">
-  <div class="mb-5">
-    <h2 class="text-sm font-semibold text-slate-900">Cài đặt tài khoản</h2>
-    <p class="text-xs text-slate-500">Thông tin hồ sơ và tuỳ chọn thông báo (dữ liệu mẫu, chưa lưu vào máy chủ)</p>
-  </div>
-
-  <form [formGroup]="form" (ngSubmit)="onSubmit()" class="flex flex-col gap-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-      <div class="flex flex-col gap-1.5">
-        <label for="displayName" class="text-sm font-medium text-slate-700">Tên hiển thị</label>
-        <input
-          id="displayName"
-          type="text"
-          formControlName="displayName"
-          class="rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm text-slate-800 outline-none transition focus:border-slate-400"
-        />
-        @if (form.controls.displayName.touched && form.controls.displayName.invalid) {
-          <p class="text-xs text-rose-600">Vui lòng nhập tên hiển thị.</p>
-        }
+<div class="flex flex-col gap-8">
+  <!-- ============ Tài khoản ============ -->
+  <section class="flex flex-col gap-4">
+    <div class="flex items-center justify-between">
+      <div>
+        <h2 class="text-sm font-semibold text-slate-900">Tài khoản</h2>
+        <p class="text-xs text-slate-500">Tiền mặt, ngân hàng, ví điện tử, thẻ tín dụng...</p>
       </div>
-
-      <div class="flex flex-col gap-1.5">
-        <label for="email" class="text-sm font-medium text-slate-700">Email</label>
-        <input
-          id="email"
-          type="email"
-          formControlName="email"
-          class="rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm text-slate-800 outline-none transition focus:border-slate-400"
-        />
-        @if (form.controls.email.touched && form.controls.email.invalid) {
-          <p class="text-xs text-rose-600">Vui lòng nhập email hợp lệ.</p>
-        }
-      </div>
-    </div>
-
-    <div class="flex flex-col gap-1.5 sm:w-64">
-      <label for="budgetAlertThreshold" class="text-sm font-medium text-slate-700">Ngưỡng cảnh báo ngân sách (%)</label>
-      <input
-        id="budgetAlertThreshold"
-        type="number"
-        min="1"
-        max="100"
-        formControlName="budgetAlertThreshold"
-        class="rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm text-slate-800 outline-none transition focus:border-slate-400"
-      />
-      @if (form.controls.budgetAlertThreshold.touched && form.controls.budgetAlertThreshold.invalid) {
-        <p class="text-xs text-rose-600">Ngưỡng phải trong khoảng 1-100.</p>
-      }
-    </div>
-
-    <div class="flex flex-col gap-3 border-t border-slate-100 pt-5">
-      <label class="flex items-center justify-between gap-4">
-        <span class="text-sm text-slate-700">Nhận thông báo qua email</span>
-        <input type="checkbox" formControlName="emailNotifications" class="size-4 rounded border-slate-300" />
-      </label>
-      <label class="flex items-center justify-between gap-4">
-        <span class="text-sm text-slate-700">Cảnh báo khi vượt ngân sách</span>
-        <input type="checkbox" formControlName="budgetAlerts" class="size-4 rounded border-slate-300" />
-      </label>
-    </div>
-
-    <div class="flex items-center gap-3 border-t border-slate-100 pt-5">
       <button
-        type="submit"
-        class="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800"
+        type="button"
+        class="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-3.5 py-2 text-sm font-medium text-white transition hover:bg-slate-800"
+        (click)="openCreateAccountForm()"
       >
-        Lưu thay đổi
+        <svg lucidePlus [size]="16" />
+        Thêm tài khoản
       </button>
-      @if (saved()) {
-        <span class="text-sm font-medium text-emerald-600">Đã lưu (mock).</span>
+    </div>
+
+    <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+      @if (accountsLoading()) {
+        <div class="flex flex-col items-center justify-center gap-3 py-16 text-sm text-slate-400">
+          <div
+            class="size-8 animate-spin rounded-full border-2 border-slate-200 border-t-slate-500"
+          ></div>
+          Đang tải tài khoản...
+        </div>
+      } @else if (accountsError()) {
+        <div class="flex flex-col items-center gap-3 py-16 text-center">
+          <p class="text-sm text-rose-600">{{ accountsError() }}</p>
+          <button
+            type="button"
+            class="rounded-xl border border-slate-200 px-3.5 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-100"
+            (click)="loadAccounts()"
+          >
+            Thử lại
+          </button>
+        </div>
+      } @else if (accounts().length === 0) {
+        <div class="flex flex-col items-center gap-2 py-16 text-center text-sm text-slate-400">
+          <p>Chưa có tài khoản nào.</p>
+          <button
+            type="button"
+            class="rounded-xl border border-slate-200 px-3.5 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-100"
+            (click)="openCreateAccountForm()"
+          >
+            Thêm tài khoản đầu tiên
+          </button>
+        </div>
+      } @else {
+        <div class="overflow-x-auto">
+          <table class="w-full min-w-[520px] text-left text-sm">
+            <thead
+              class="border-b border-slate-100 bg-slate-50/60 text-xs uppercase tracking-wide text-slate-500"
+            >
+              <tr>
+                <th class="px-5 py-3 font-medium">Tên tài khoản</th>
+                <th class="px-5 py-3 font-medium">Loại</th>
+                <th class="px-5 py-3 text-right font-medium">Số dư</th>
+                <th class="px-5 py-3 text-right font-medium">Hành động</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              @for (acc of accounts(); track acc.id) {
+                <tr class="transition hover:bg-slate-50">
+                  <td class="px-5 py-3.5 font-medium text-slate-800">{{ acc.name }}</td>
+                  <td class="px-5 py-3.5 text-slate-500">{{ accountTypeLabel(acc.type) }}</td>
+                  <td class="px-5 py-3.5 text-right font-semibold text-slate-800">
+                    {{ formatVnd(acc.balance) }}
+                  </td>
+                  <td class="px-5 py-3.5 text-right">
+                    <div class="flex items-center justify-end gap-1">
+                      <button
+                        type="button"
+                        class="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+                        aria-label="Sửa tài khoản"
+                        (click)="openEditAccountForm(acc)"
+                      >
+                        <svg lucidePencil [size]="16" />
+                      </button>
+                      <button
+                        type="button"
+                        class="rounded-lg p-1.5 text-slate-400 transition hover:bg-rose-50 hover:text-rose-600 disabled:opacity-50"
+                        [disabled]="deletingAccountId() === acc.id"
+                        aria-label="Xóa tài khoản"
+                        (click)="deleteAccount(acc)"
+                      >
+                        <svg lucideTrash2 [size]="16" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
       }
     </div>
-  </form>
+  </section>
+
+  <!-- ============ Danh mục ============ -->
+  <section class="flex flex-col gap-4">
+    <div class="flex items-center justify-between">
+      <div>
+        <h2 class="text-sm font-semibold text-slate-900">Danh mục</h2>
+        <p class="text-xs text-slate-500">Danh mục thu nhập và chi tiêu</p>
+      </div>
+      <button
+        type="button"
+        class="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-3.5 py-2 text-sm font-medium text-white transition hover:bg-slate-800"
+        (click)="openCreateCategoryForm()"
+      >
+        <svg lucidePlus [size]="16" />
+        Thêm danh mục
+      </button>
+    </div>
+
+    <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+      @if (categoriesLoading()) {
+        <div class="flex flex-col items-center justify-center gap-3 py-16 text-sm text-slate-400">
+          <div
+            class="size-8 animate-spin rounded-full border-2 border-slate-200 border-t-slate-500"
+          ></div>
+          Đang tải danh mục...
+        </div>
+      } @else if (categoriesError()) {
+        <div class="flex flex-col items-center gap-3 py-16 text-center">
+          <p class="text-sm text-rose-600">{{ categoriesError() }}</p>
+          <button
+            type="button"
+            class="rounded-xl border border-slate-200 px-3.5 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-100"
+            (click)="loadCategories()"
+          >
+            Thử lại
+          </button>
+        </div>
+      } @else if (categories().length === 0) {
+        <div class="flex flex-col items-center gap-2 py-16 text-center text-sm text-slate-400">
+          <p>Chưa có danh mục nào.</p>
+          <button
+            type="button"
+            class="rounded-xl border border-slate-200 px-3.5 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-100"
+            (click)="openCreateCategoryForm()"
+          >
+            Thêm danh mục đầu tiên
+          </button>
+        </div>
+      } @else {
+        <ul class="divide-y divide-slate-100">
+          @for (cat of categories(); track cat.id) {
+            <li class="flex items-center justify-between gap-3 px-5 py-3.5">
+              <div class="flex items-center gap-3">
+                <span
+                  class="flex size-9 shrink-0 items-center justify-center rounded-xl"
+                  [style.background-color]="cat.color + '1f'"
+                  [style.color]="cat.color"
+                >
+                  <app-category-icon [icon]="cat.icon" [size]="16" />
+                </span>
+                <div>
+                  <p class="text-sm font-medium text-slate-800">{{ cat.name }}</p>
+                  <p class="text-xs text-slate-500">
+                    {{ cat.kind === 'INCOME' ? 'Thu nhập' : 'Chi tiêu' }}
+                  </p>
+                </div>
+              </div>
+              <div class="flex items-center gap-1">
+                <button
+                  type="button"
+                  class="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+                  aria-label="Sửa danh mục"
+                  (click)="openEditCategoryForm(cat)"
+                >
+                  <svg lucidePencil [size]="16" />
+                </button>
+                <button
+                  type="button"
+                  class="rounded-lg p-1.5 text-slate-400 transition hover:bg-rose-50 hover:text-rose-600 disabled:opacity-50"
+                  [disabled]="deletingCategoryId() === cat.id"
+                  aria-label="Xóa danh mục"
+                  (click)="deleteCategory(cat)"
+                >
+                  <svg lucideTrash2 [size]="16" />
+                </button>
+              </div>
+            </li>
+          }
+        </ul>
+      }
+    </div>
+  </section>
 </div>
+
+<!-- Form thêm/sửa tài khoản -->
+@if (accountFormOpen()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4">
+    <div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+      <div class="mb-4 flex items-center justify-between">
+        <h2 class="text-base font-semibold text-slate-900">
+          {{ editingAccountId() ? 'Sửa tài khoản' : 'Thêm tài khoản' }}
+        </h2>
+        <button
+          type="button"
+          class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100"
+          aria-label="Đóng"
+          (click)="closeAccountForm()"
+        >
+          <svg lucideX [size]="18" />
+        </button>
+      </div>
+
+      <form [formGroup]="accountForm" (ngSubmit)="submitAccountForm()" class="flex flex-col gap-4">
+        <div class="flex flex-col gap-1.5">
+          <label for="acc-name" class="text-sm font-medium text-slate-700">Tên tài khoản</label>
+          <input
+            id="acc-name"
+            type="text"
+            formControlName="name"
+            class="rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-slate-400"
+          />
+          @if (accountForm.controls.name.touched && accountForm.controls.name.invalid) {
+            <p class="text-xs text-rose-600">Vui lòng nhập tên tài khoản (tối đa 100 ký tự).</p>
+          }
+        </div>
+
+        <div class="flex flex-col gap-1.5">
+          <label for="acc-type" class="text-sm font-medium text-slate-700">Loại tài khoản</label>
+          <select
+            id="acc-type"
+            formControlName="type"
+            class="rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-slate-400"
+          >
+            @for (opt of accountTypeOptions; track opt.value) {
+              <option [value]="opt.value">{{ opt.label }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="flex flex-col gap-1.5">
+          <label for="acc-balance" class="text-sm font-medium text-slate-700">Số dư (VND)</label>
+          <input
+            id="acc-balance"
+            type="number"
+            step="1"
+            formControlName="balance"
+            class="rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-slate-400"
+          />
+          @if (accountForm.controls.balance.touched && accountForm.controls.balance.invalid) {
+            <p class="text-xs text-rose-600">Số dư phải là số nguyên.</p>
+          }
+        </div>
+
+        @if (accountFormError()) {
+          <p class="text-sm text-rose-600">{{ accountFormError() }}</p>
+        }
+
+        <div class="flex items-center justify-end gap-3 border-t border-slate-100 pt-4">
+          <button
+            type="button"
+            class="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-100"
+            (click)="closeAccountForm()"
+          >
+            Hủy
+          </button>
+          <button
+            type="submit"
+            class="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800 disabled:opacity-50"
+            [disabled]="accountSubmitting()"
+          >
+            {{
+              accountSubmitting()
+                ? 'Đang lưu...'
+                : editingAccountId()
+                  ? 'Lưu thay đổi'
+                  : 'Thêm tài khoản'
+            }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+<!-- Form thêm/sửa danh mục -->
+@if (categoryFormOpen()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4">
+    <div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+      <div class="mb-4 flex items-center justify-between">
+        <h2 class="text-base font-semibold text-slate-900">
+          {{ editingCategoryId() ? 'Sửa danh mục' : 'Thêm danh mục' }}
+        </h2>
+        <button
+          type="button"
+          class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100"
+          aria-label="Đóng"
+          (click)="closeCategoryForm()"
+        >
+          <svg lucideX [size]="18" />
+        </button>
+      </div>
+
+      <form
+        [formGroup]="categoryForm"
+        (ngSubmit)="submitCategoryForm()"
+        class="flex flex-col gap-4"
+      >
+        <div class="flex flex-col gap-1.5">
+          <label for="cat-name" class="text-sm font-medium text-slate-700">Tên danh mục</label>
+          <input
+            id="cat-name"
+            type="text"
+            formControlName="name"
+            class="rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-slate-400"
+          />
+          @if (categoryForm.controls.name.touched && categoryForm.controls.name.invalid) {
+            <p class="text-xs text-rose-600">Vui lòng nhập tên danh mục (tối đa 100 ký tự).</p>
+          }
+        </div>
+
+        <div class="flex flex-col gap-1.5">
+          <label for="cat-kind" class="text-sm font-medium text-slate-700">Loại danh mục</label>
+          <select
+            id="cat-kind"
+            formControlName="kind"
+            class="rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-slate-400"
+          >
+            @for (opt of categoryKindOptions; track opt.value) {
+              <option [value]="opt.value">{{ opt.label }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div class="flex flex-col gap-1.5">
+            <label for="cat-icon" class="text-sm font-medium text-slate-700">Icon</label>
+            <select
+              id="cat-icon"
+              formControlName="icon"
+              class="rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-slate-400"
+            >
+              @for (opt of iconOptions; track opt.value) {
+                <option [value]="opt.value">{{ opt.label }}</option>
+              }
+            </select>
+          </div>
+
+          <div class="flex flex-col gap-1.5">
+            <label for="cat-color" class="text-sm font-medium text-slate-700">Màu</label>
+            <div class="flex items-center gap-2">
+              <input
+                id="cat-color"
+                type="color"
+                formControlName="color"
+                class="h-[38px] w-12 shrink-0 cursor-pointer rounded-lg border border-slate-200"
+              />
+              <span class="text-xs text-slate-500">{{ categoryForm.controls.color.value }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div
+          class="flex items-center gap-2 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5"
+        >
+          <span class="text-xs text-slate-500">Xem trước:</span>
+          <span
+            class="flex size-8 items-center justify-center rounded-lg"
+            [style.background-color]="categoryForm.controls.color.value + '1f'"
+            [style.color]="categoryForm.controls.color.value"
+          >
+            <app-category-icon [icon]="categoryForm.controls.icon.value" [size]="16" />
+          </span>
+          <span class="text-sm font-medium text-slate-700">{{
+            categoryForm.controls.name.value || 'Tên danh mục'
+          }}</span>
+        </div>
+
+        @if (categoryFormError()) {
+          <p class="text-sm text-rose-600">{{ categoryFormError() }}</p>
+        }
+
+        <div class="flex items-center justify-end gap-3 border-t border-slate-100 pt-4">
+          <button
+            type="button"
+            class="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-100"
+            (click)="closeCategoryForm()"
+          >
+            Hủy
+          </button>
+          <button
+            type="submit"
+            class="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800 disabled:opacity-50"
+            [disabled]="categorySubmitting()"
+          >
+            {{
+              categorySubmitting()
+                ? 'Đang lưu...'
+                : editingCategoryId()
+                  ? 'Lưu thay đổi'
+                  : 'Thêm danh mục'
+            }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}

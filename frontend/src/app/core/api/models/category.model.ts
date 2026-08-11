@@ -10,3 +10,17 @@ export interface Category {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface CreateCategoryRequest {
+  name: string;
+  kind: CategoryKind;
+  color: string;
+  icon?: string;
+}
+
+export interface UpdateCategoryRequest {
+  name?: string;
+  kind?: CategoryKind;
+  color?: string;
+  icon?: string;
+}
