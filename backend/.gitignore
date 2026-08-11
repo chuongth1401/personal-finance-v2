@@ -41,6 +41,11 @@ lerna-debug.log*
 .env.test.local
 .env.production.local
 .env.local
+.env.*
+!.env.example
+node_modules
+dist
+.vercel
 
 # temp directory
 .temp
@@ -56,3 +61,6 @@ pids
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
 /generated/prisma
+
+# File hoá đơn lưu local (giai đoạn 1) - xem ReceiptModule/LocalFileStorageService
+/uploads

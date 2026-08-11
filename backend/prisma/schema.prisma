@@ -1,7 +1,8 @@
 // Prisma schema cho backend NestJS - ứng dụng quản lý tài chính cá nhân.
-// SQLite không hỗ trợ enum ở tầng DB, nên các trường dạng "loại"
-// (type, kind, frequency, severity...) dùng String và được validate
-// bằng class-validator ở tầng DTO (xem backend/CLAUDE.md).
+// Các trường dạng "loại" (type, kind, frequency, severity...) vẫn dùng
+// String thay vì enum gốc của Postgres, giữ nguyên quy ước validate bằng
+// class-validator ở tầng DTO (xem backend/CLAUDE.md) - tránh thay đổi phạm
+// vi ngoài việc chuyển engine DB từ SQLite sang Postgres.
 
 generator client {
   provider            = "prisma-client"
@@ -11,7 +12,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
 }
 
 /// Người dùng. Xác thực thật chưa được triển khai - passwordHash để trống
@@ -157,20 +158,31 @@ model SavingsGoal {
   @@index([userId, status])
 }
 
-/// Hoá đơn/biên lai. transactionId optional vì người dùng có thể upload
-/// ảnh hoá đơn trước, đối soát với giao dịch cụ thể sau (luồng OCR).
+/// Hoá đơn/biên lai. transactionId optional vì người dùng upload ảnh hoá đơn
+/// trước, xác nhận thành giao dịch chính thức sau (luồng OCR - xem ReceiptModule).
+/// status: UPLOADED | PROCESSING | COMPLETED | FAILED | CONFIRMED
 model Receipt {
   id            String    @id @default(cuid())
   userId        String
   transactionId String?
+  /// Khoá lưu trữ file - hiện là đường dẫn tương đối trên đĩa cục bộ; sẽ là
+  /// object key khi chuyển sang cloud storage (xem LocalFileStorageService).
   fileUrl       String
   fileName      String?
   mimeType      String?
   fileSize      Int?
+  /// merchantName/amount/issuedAt đóng vai trò dữ liệu "draft" do extractor
+  /// (mock hoặc OCR thật sau này) trích xuất - chỉ trở thành Transaction thật
+  /// khi người dùng gọi endpoint confirm.
   merchantName  String?
   /// Số tiền đọc được từ hoá đơn (có thể lệch với transaction.amount trước khi đối soát).
   amount        Int?
   issuedAt      DateTime?
+  /// Độ tin cậy của kết quả trích xuất, 0-1.
+  confidence    Float?
+  status        String    @default("UPLOADED")
+  /// Lý do xử lý thất bại khi status = FAILED.
+  errorMessage  String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -178,6 +190,7 @@ model Receipt {
   transaction Transaction? @relation(fields: [transactionId], references: [id], onDelete: SetNull)
 
   @@index([userId])
+  @@index([userId, status])
   @@index([transactionId])
 }
 
