@@ -8,8 +8,11 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.enableShutdownHooks();
   app.enableCors({
-    origin: process.env.FRONTEND_ORIGIN ?? 'http://localhost:4200',
-  });
+  origin: [
+    'http://localhost:4200',
+    process.env.FRONTEND_ORIGIN ?? '',
+  ].filter(Boolean),
+});
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
